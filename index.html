@@ -1,0 +1,3225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北滘职校学生请假平台</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        info: '#8b5cf6',
+                        light: '#f8fafc',
+                        dark: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-all {
+                transition-property: all;
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                transition-duration: 150ms;
+            }
+            .nav-item {
+                @apply flex items-center p-3 text-gray-600 hover:bg-primary hover:bg-opacity-10 hover:text-primary transition-all;
+            }
+            .nav-item.active {
+                @apply bg-primary bg-opacity-10 text-primary font-medium;
+            }
+            .nav-item i {
+                @apply mr-3 text-lg;
+            }
+            .card {
+                @apply bg-white p-5 border border-slate-200 transition-all hover:shadow-sm;
+            }
+            .card-header {
+                @apply flex justify-between items-center mb-4 pb-2 border-b border-slate-200;
+            }
+            .card-title {
+                @apply text-lg font-medium text-gray-800;
+            }
+            .btn {
+                @apply px-4 py-2 rounded-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-blue-600 focus:ring-blue-500;
+            }
+            .btn-secondary {
+                @apply bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-300;
+            }
+            .btn-success {
+                @apply bg-success text-white hover:bg-green-600 focus:ring-green-500;
+            }
+            .btn-warning {
+                @apply bg-warning text-white hover:bg-amber-600 focus:ring-amber-500;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-red-600 focus:ring-red-500;
+            }
+            .form-input {
+                @apply w-full px-3 py-2 border border-gray-300 rounded-sm shadow-sm focus:outline-none focus:ring-primary focus:border-primary;
+            }
+            .form-label {
+                @apply block text-sm font-medium text-gray-700 mb-1;
+            }
+            .form-group {
+                @apply mb-4;
+            }
+            .badge {
+                @apply inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium;
+            }
+            .badge-success {
+                @apply bg-green-100 text-green-800;
+            }
+            .badge-warning {
+                @apply bg-yellow-100 text-yellow-800;
+            }
+            .badge-danger {
+                @apply bg-red-100 text-red-800;
+            }
+            .badge-info {
+                @apply bg-blue-100 text-blue-800;
+            }
+            .table-container {
+                @apply overflow-x-auto;
+            }
+            .table {
+                @apply min-w-full divide-y divide-gray-200;
+            }
+            .table th {
+                @apply px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+            }
+            .table td {
+                @apply px-6 py-4 whitespace-nowrap text-sm text-gray-500;
+            }
+            .table tr {
+                @apply hover:bg-gray-50;
+            }
+            .table tr.alert {
+                @apply bg-yellow-50;
+            }
+            .tab {
+                @apply px-4 py-2 text-sm font-medium;
+            }
+            .tab.active {
+                @apply bg-white text-primary border-b-2 border-primary;
+            }
+            .tab:not(.active) {
+                @apply text-gray-500 hover:text-gray-700;
+            }
+            .stat-card {
+                @apply bg-white p-4 border-l-4 shadow-sm;
+            }
+            .stat-title {
+                @apply text-sm text-gray-500 font-medium;
+            }
+            .stat-value {
+                @apply text-2xl font-bold mt-1;
+            }
+            .stat-desc {
+                @apply text-xs text-gray-500 mt-1;
+            }
+            .trend-up {
+                @apply text-success flex items-center;
+            }
+            .trend-down {
+                @apply text-danger flex items-center;
+            }
+            .trend-neutral {
+                @apply text-gray-500 flex items-center;
+            }
+            .line-separator {
+                @apply my-4 relative;
+            }
+            .line-separator::before {
+                content: '';
+                @apply absolute left-0 right-0 top-1/2 border-t border-dashed border-gray-200;
+            }
+            .line-separator::after {
+                content: '';
+                @apply absolute left-0 right-0 top-1/2 flex justify-center;
+            }
+            .bg-grid {
+                background-image: linear-gradient(to right, rgba(100, 116, 139, 0.05) 1px, transparent 1px),
+                                  linear-gradient(to bottom, rgba(100, 116, 139, 0.05) 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+            .clip-path-polygon {
+                clip-path: polygon(
+                    0% 0%, 
+                    95% 0%, 
+                    100% 5%, 
+                    100% 100%, 
+                    5% 100%, 
+                    0% 95%
+                );
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 侧边导航栏 -->
+        <aside class="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
+            <div class="flex items-center justify-center h-16 border-b border-gray-200">
+                <h1 class="text-xl font-bold text-primary">北滘职校请假平台</h1>
+            </div>
+            <div class="flex flex-col flex-grow p-4 overflow-y-auto">
+                <nav class="flex-1 space-y-2">
+                    <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                        <i class="fa fa-dashboard"></i>
+                        <span>请假总览</span>
+                    </a>
+                    <a href="#classes" class="nav-item" data-page="classes">
+                        <i class="fa fa-users"></i>
+                        <span>班级管理</span>
+                    </a>
+                    <a href="#students" class="nav-item" data-page="students">
+                        <i class="fa fa-user"></i>
+                        <span>学生管理</span>
+                    </a>
+                    <a href="#leave-request" class="nav-item" data-page="leave-request">
+                        <i class="fa fa-calendar-plus-o"></i>
+                        <span>请假登记</span>
+                    </a>
+                    <a href="#leave-records" class="nav-item" data-page="leave-records">
+                        <i class="fa fa-list-alt"></i>
+                        <span>请假记录</span>
+                    </a>
+                    <a href="#realtime-panel" class="nav-item" data-page="realtime-panel">
+                        <i class="fa fa-area-chart"></i>
+                        <span>实时数据面板</span>
+                    </a>
+                    <a href="#data-export" class="nav-item" data-page="data-export">
+                        <i class="fa fa-download"></i>
+                        <span>数据导出</span>
+                    </a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-sm bg-primary text-white flex items-center justify-center">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-700">管理员</p>
+                        <p class="text-xs text-gray-500">admin@school.edu</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 移动端导航菜单按钮 -->
+        <div class="md:hidden fixed bottom-4 right-4 z-50">
+            <button id="mobile-menu-button" class="bg-primary text-white p-3 rounded-sm shadow-lg">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- 移动端导航菜单 -->
+        <div id="mobile-menu" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden">
+            <div class="absolute right-0 top-0 bottom-0 w-64 bg-white shadow-lg transform transition-transform">
+                <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                    <h1 class="text-lg font-bold text-primary">北滘职校请假平台</h1>
+                    <button id="close-mobile-menu" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <nav class="p-4 space-y-2">
+                    <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                        <i class="fa fa-dashboard"></i>
+                        <span>请假总览</span>
+                    </a>
+                    <a href="#classes" class="nav-item" data-page="classes">
+                        <i class="fa fa-users"></i>
+                        <span>班级管理</span>
+                    </a>
+                    <a href="#students" class="nav-item" data-page="students">
+                        <i class="fa fa-user"></i>
+                        <span>学生管理</span>
+                    </a>
+                    <a href="#leave-request" class="nav-item" data-page="leave-request">
+                        <i class="fa fa-calendar-plus-o"></i>
+                        <span>请假登记</span>
+                    </a>
+                    <a href="#leave-records" class="nav-item" data-page="leave-records">
+                        <i class="fa fa-list-alt"></i>
+                        <span>请假记录</span>
+                    </a>
+                    <a href="#realtime-panel" class="nav-item" data-page="realtime-panel">
+                        <i class="fa fa-area-chart"></i>
+                        <span>实时数据面板</span>
+                    </a>
+                    <a href="#data-export" class="nav-item" data-page="data-export">
+                        <i class="fa fa-download"></i>
+                        <span>数据导出</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6 bg-grid">
+            <!-- 页面内容 - 动态切换 -->
+            <div id="page-content">
+                <!-- 请假总览页 -->
+                <div id="dashboard-page" class="page active">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">请假总览</h2>
+                    </div>
+
+                    <!-- 数据卡片 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <!-- 总班级数 -->
+                        <div class="stat-card border-l-primary">
+                            <div class="stat-title">总班级数</div>
+                            <div class="stat-value" id="total-classes">0</div>
+                            <div class="stat-desc">全校班级总数</div>
+                        </div>
+
+                        <!-- 总学生数 -->
+                        <div class="stat-card border-l-info">
+                            <div class="stat-title">总学生数</div>
+                            <div class="stat-value" id="total-students">0</div>
+                            <div class="stat-desc">全校学生总数</div>
+                        </div>
+
+                        <!-- 今日请假数 -->
+                        <div class="stat-card border-l-warning">
+                            <div class="stat-title">今日请假数</div>
+                            <div class="flex items-baseline">
+                                <div class="stat-value" id="today-leaves">0</div>
+                                <div class="ml-2 text-sm" id="today-leaves-trend"></div>
+                            </div>
+                            <div class="stat-desc">相比昨日</div>
+                        </div>
+
+                        <!-- 警报数 -->
+                        <div class="stat-card border-l-danger">
+                            <div class="stat-title">警报数</div>
+                            <div class="stat-value" id="alert-count">0</div>
+                            <div class="stat-desc">需要关注的请假</div>
+                        </div>
+                    </div>
+
+                    <!-- 折线分隔符 -->
+                    <div class="line-separator mb-6"></div>
+
+                    <!-- 图表和数据区域 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- 请假趋势图表 -->
+                        <div class="card col-span-2">
+                            <div class="card-header">
+                                <h3 class="card-title">近期请假趋势</h3>
+                                <div class="flex space-x-2">
+                                    <button class="btn btn-secondary text-sm py-1 px-2 time-filter active" data-days="7">7天</button>
+                                    <button class="btn btn-secondary text-sm py-1 px-2 time-filter" data-days="30">30天</button>
+                                    <button class="btn btn-secondary text-sm py-1 px-2 time-filter" data-days="90">90天</button>
+                                </div>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="leave-trend-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 请假类型分布 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">请假类型分布</h3>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="leave-type-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 今日请假详情 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">今日请假详情</h3>
+                            <div class="flex space-x-2">
+                                <button class="btn btn-secondary text-sm py-1 px-2">
+                                    <i class="fa fa-filter mr-1"></i> 筛选
+                                </button>
+                                <button class="btn btn-primary text-sm py-1 px-2" onclick="UIRenderer.navigateTo('leave-request')">
+                                    <i class="fa fa-plus mr-1"></i> 新增请假
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>班级</th>
+                                        <th>学生</th>
+                                        <th>请假时间</th>
+                                        <th>请假理由</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="today-leave-details">
+                                    <!-- 今日请假数据将通过JavaScript动态填充 -->
+                                    <tr>
+                                        <td colspan="5" class="text-center text-gray-500 py-4">暂无数据</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 班级管理页 -->
+                <div id="classes-page" class="page hidden">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">班级管理</h2>
+                    </div>
+
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h3 class="card-title">班级列表</h3>
+                            <div class="flex space-x-2">
+                                <button id="download-class-template" class="btn btn-secondary text-sm py-1 px-2">
+                                    <i class="fa fa-download mr-1"></i> 下载模板
+                                </button>
+                                <label for="class-file-upload" class="btn btn-primary text-sm py-1 px-2 cursor-pointer">
+                                    <i class="fa fa-upload mr-1"></i> 导入班级
+                                </label>
+                                <input type="file" id="class-file-upload" accept=".xlsx, .xls, .csv" class="hidden">
+                                <button id="delete-selected-classes" class="btn btn-danger text-sm py-1 px-2" disabled>
+                                    <i class="fa fa-trash mr-1"></i> 删除选中
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="select-all-classes">
+                                        </th>
+                                        <th>班级名称</th>
+                                        <th>学生人数</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="class-list">
+                                    <!-- 班级数据将通过JavaScript动态填充 -->
+                                    <tr>
+                                        <td colspan="4" class="text-center text-gray-500 py-4">暂无班级数据，请导入班级</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学生管理页 -->
+                <div id="students-page" class="page hidden">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">学生管理</h2>
+                    </div>
+
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                <select id="student-class-filter" class="form-input text-sm">
+                                    <option value="">所有班级</option>
+                                    <!-- 班级选项将通过JavaScript动态填充 -->
+                                </select>
+                                <input type="text" id="student-search" placeholder="搜索学生..." class="form-input text-sm">
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="download-student-template" class="btn btn-secondary text-sm py-1 px-2">
+                                    <i class="fa fa-download mr-1"></i> 下载模板
+                                </button>
+                                <label for="student-file-upload" class="btn btn-primary text-sm py-1 px-2 cursor-pointer">
+                                    <i class="fa fa-upload mr-1"></i> 导入学生
+                                </label>
+                                <input type="file" id="student-file-upload" accept=".xlsx, .xls, .csv" class="hidden">
+                                <button id="delete-selected-students" class="btn btn-danger text-sm py-1 px-2" disabled>
+                                    <i class="fa fa-trash mr-1"></i> 删除选中
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="select-all-students">
+                                        </th>
+                                        <th>班级</th>
+                                        <th>姓名</th>
+                                        <th>性别</th>
+                                        <th>类型</th>
+                                        <th>宿舍号</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student-list">
+                                    <!-- 学生数据将通过JavaScript动态填充 -->
+                                    <tr>
+                                        <td colspan="7" class="text-center text-gray-500 py-4">暂无学生数据，请导入学生</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 请假登记页 -->
+                <div id="leave-request-page" class="page hidden">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">请假登记</h2>
+                    </div>
+
+                    <div class="card">
+                        <form id="leave-request-form">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="form-group">
+                                    <label for="leave-class" class="form-label">班级</label>
+                                    <select id="leave-class" class="form-input" required>
+                                        <option value="">请选择班级</option>
+                                        <!-- 班级选项将通过JavaScript动态填充 -->
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="leave-student" class="form-label">学生</label>
+                                    <select id="leave-student" class="form-input" required>
+                                        <option value="">请先选择班级</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">请假开始时间</label>
+                                    <div class="flex gap-2 items-center">
+                                        <input type="date" id="leave-start-date" class="form-input flex-1" required>
+                                        <select id="leave-start-hour" class="form-input" style="width: 80px;" required>
+                                            <option value="">时</option>
+                                        </select>
+                                        <span class="text-gray-500">:</span>
+                                        <select id="leave-start-minute" class="form-input" style="width: 80px;" required>
+                                            <option value="">分</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">请假结束时间</label>
+                                    <div class="flex gap-2 items-center">
+                                        <input type="date" id="leave-end-date" class="form-input flex-1" required>
+                                        <select id="leave-end-hour" class="form-input" style="width: 80px;" required>
+                                            <option value="">时</option>
+                                        </select>
+                                        <span class="text-gray-500">:</span>
+                                        <select id="leave-end-minute" class="form-input" style="width: 80px;" required>
+                                            <option value="">分</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group md:col-span-2">
+                                    <label for="leave-reason" class="form-label">请假理由</label>
+                                    <textarea id="leave-reason" rows="3" class="form-input" required></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">停餐选项</label>
+                                    <div class="space-y-2" id="meal-options">
+                                        <div class="flex items-center">
+                                            <input type="radio" id="meal-none" name="meal-option" value="none" class="h-4 w-4 text-primary focus:ring-primary border-gray-300" checked>
+                                            <label for="meal-none" class="ml-2 text-sm text-gray-700">不停餐</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" id="meal-lunch" name="meal-option" value="lunch" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
+                                            <label for="meal-lunch" class="ml-2 text-sm text-gray-700">停午餐</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" id="meal-dinner" name="meal-option" value="dinner" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
+                                            <label for="meal-dinner" class="ml-2 text-sm text-gray-700">停晚餐</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" id="meal-both" name="meal-option" value="both" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
+                                            <label for="meal-both" class="ml-2 text-sm text-gray-700">停午餐和晚餐</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">住宿请假选项</label>
+                                    <div class="space-y-2" id="dorm-options">
+                                        <div class="flex items-center">
+                                            <input type="radio" id="dorm-none" name="dorm-option" value="none" class="h-4 w-4 text-primary focus:ring-primary border-gray-300" checked>
+                                            <label for="dorm-none" class="ml-2 text-sm text-gray-700">午休晚休不请假</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" id="dorm-noon" name="dorm-option" value="noon" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
+                                            <label for="dorm-noon" class="ml-2 text-sm text-gray-700">午休请假</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" id="dorm-night" name="dorm-option" value="night" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
+                                            <label for="dorm-night" class="ml-2 text-sm text-gray-700">晚休请假</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" id="dorm-both" name="dorm-option" value="both" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
+                                            <label for="dorm-both" class="ml-2 text-sm text-gray-700">午休晚休都请假</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex justify-end">
+                                <button type="button" id="cancel-leave-request" class="btn btn-secondary mr-2 py-1 px-4">取消</button>
+                                <button type="submit" class="btn btn-primary py-1 px-4">提交请假</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 请假记录页 -->
+                <div id="leave-records-page" class="page hidden">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">请假记录</h2>
+                    </div>
+
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                <select id="record-class-filter" class="form-input text-sm">
+                                    <option value="">所有班级</option>
+                                    <!-- 班级选项将通过JavaScript动态填充 -->
+                                </select>
+                                <select id="record-status-filter" class="form-input text-sm">
+                                    <option value="">所有状态</option>
+                                    <option value="active">进行中</option>
+                                    <option value="cancelled">已取消</option>
+                                    <option value="expired">已过期</option>
+                                </select>
+                                <input type="text" id="record-search" placeholder="搜索学生..." class="form-input text-sm">
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>班级</th>
+                                        <th>学生</th>
+                                        <th>请假开始时间</th>
+                                        <th>请假结束时间</th>
+                                        <th>请假理由</th>
+                                        <th>停餐选项</th>
+                                        <th>住宿请假选项</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leave-records-list">
+                                    <!-- 请假记录数据将通过JavaScript动态填充 -->
+                                    <tr>
+                                        <td colspan="9" class="text-center text-gray-500 py-4">暂无请假记录</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center">
+                            <div class="text-sm text-gray-500">
+                                显示 <span id="records-showing">0</span> 条，共 <span id="records-total">0</span> 条
+                            </div>
+                            <div class="flex space-x-1">
+                                <button id="prev-page" class="px-3 py-1 border rounded-sm text-sm disabled:opacity-50" disabled>
+                                    <i class="fa fa-chevron-left"></i>
+                                </button>
+                                <button id="next-page" class="px-3 py-1 border rounded-sm text-sm disabled:opacity-50" disabled>
+                                    <i class="fa fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 实时数据面板页 -->
+                <div id="realtime-panel-page" class="page hidden">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">实时数据面板</h2>
+                    </div>
+
+                    <!-- 数据概览卡片 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <!-- 安保部分 -->
+                        <div class="stat-card border-l-primary">
+                            <div class="stat-title">安保部分</div>
+                            <div class="stat-value" id="security-count">0</div>
+                            <div class="stat-desc">当前外出学生</div>
+                        </div>
+
+                        <!-- 停餐部分 -->
+                        <div class="stat-card border-l-warning">
+                            <div class="stat-title">停餐部分</div>
+                            <div class="stat-value" id="meal-count">0</div>
+                            <div class="stat-desc">当前停餐学生</div>
+                        </div>
+
+                        <!-- 宿舍部分 -->
+                        <div class="stat-card border-l-info">
+                            <div class="stat-title">宿舍部分</div>
+                            <div class="stat-value" id="dorm-count">0</div>
+                            <div class="stat-desc">当前宿舍请假学生</div>
+                        </div>
+                    </div>
+
+                    <!-- 折线分隔符 -->
+                    <div class="line-separator mb-6"></div>
+
+                    <div class="mb-4 border-b border-gray-200">
+                        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="realtime-tabs" role="tablist">
+                            <li class="mr-2" role="presentation">
+                                <button class="tab active" id="security-tab" data-tab="security" type="button" role="tab">安保部分</button>
+                            </li>
+                            <li class="mr-2" role="presentation">
+                                <button class="tab" id="meal-tab" data-tab="meal" type="button" role="tab">停餐部分</button>
+                            </li>
+                            <li role="presentation">
+                                <button class="tab" id="dorm-tab" data-tab="dorm" type="button" role="tab">宿舍部分</button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="tab-content">
+                        <!-- 安保部分 -->
+                        <div id="security-content" class="tab-pane active">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">安保请假记录</h3>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fa fa-refresh fa-spin mr-1"></i> 实时更新中
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>班级</th>
+                                                <th>学生</th>
+                                                <th>请假开始时间</th>
+                                                <th>请假结束时间</th>
+                                                <th>请假理由</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="security-records">
+                                            <!-- 安保部分数据将通过JavaScript动态填充 -->
+                                            <tr>
+                                                <td colspan="5" class="text-center text-gray-500 py-4">暂无请假记录</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 停餐部分 -->
+                        <div id="meal-content" class="tab-pane hidden">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">停餐记录</h3>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fa fa-refresh fa-spin mr-1"></i> 实时更新中
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>班级</th>
+                                                <th>学生</th>
+                                                <th>停餐情况</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="meal-records">
+                                            <!-- 停餐部分数据将通过JavaScript动态填充 -->
+                                            <tr>
+                                                <td colspan="3" class="text-center text-gray-500 py-4">暂无停餐记录</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 宿舍部分 -->
+                        <div id="dorm-content" class="tab-pane hidden">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">宿舍请假记录</h3>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fa fa-refresh fa-spin mr-1"></i> 实时更新中
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>班级</th>
+                                                <th>学生</th>
+                                                <th>宿舍号</th>
+                                                <th>请假情况</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dorm-records">
+                                            <!-- 宿舍部分数据将通过JavaScript动态填充 -->
+                                            <tr>
+                                                <td colspan="4" class="text-center text-gray-500 py-4">暂无宿舍请假记录</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据导出页 -->
+                <div id="data-export-page" class="page hidden">
+                    <!-- 页面标题 -->
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 mr-3">
+                            <svg viewBox="0 0 24 24" class="text-primary w-full h-full">
+                                <polyline points="3,12 8,7 12,11 16,7 21,12" fill="none" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">数据导出</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- 安保部分导出 -->
+                        <div class="card clip-path-polygon">
+                            <div class="card-header">
+                                <h3 class="card-title">安保部分数据</h3>
+                            </div>
+                            <form id="security-export-form" class="space-y-4">
+                                <div class="form-group">
+                                    <label for="security-time-range" class="form-label">时间范围</label>
+                                    <select id="security-time-range" class="form-input">
+                                        <option value="daily">每天</option>
+                                        <option value="weekly">每周</option>
+                                        <option value="monthly">每月</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="security-date" class="form-label">日期</label>
+                                    <input type="date" id="security-date" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="security-class" class="form-label">班级</label>
+                                    <select id="security-class" class="form-input">
+                                        <option value="">所有班级</option>
+                                        <!-- 班级选项将通过JavaScript动态填充 -->
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-full py-1 px-4">
+                                    <i class="fa fa-download mr-1"></i> 导出Excel
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- 停餐部分导出 -->
+                        <div class="card clip-path-polygon">
+                            <div class="card-header">
+                                <h3 class="card-title">停餐部分数据</h3>
+                            </div>
+                            <form id="meal-export-form" class="space-y-4">
+                                <div class="form-group">
+                                    <label for="meal-time-range" class="form-label">时间范围</label>
+                                    <select id="meal-time-range" class="form-input">
+                                        <option value="daily">每天</option>
+                                        <option value="weekly">每周</option>
+                                        <option value="monthly">每月</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="meal-date" class="form-label">日期</label>
+                                    <input type="date" id="meal-date" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="meal-class" class="form-label">班级</label>
+                                    <select id="meal-class" class="form-input">
+                                        <option value="">所有班级</option>
+                                        <!-- 班级选项将通过JavaScript动态填充 -->
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-full py-1 px-4">
+                                    <i class="fa fa-download mr-1"></i> 导出Excel
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- 宿舍部分导出 -->
+                        <div class="card clip-path-polygon">
+                            <div class="card-header">
+                                <h3 class="card-title">宿舍部分数据</h3>
+                            </div>
+                            <form id="dorm-export-form" class="space-y-4">
+                                <div class="form-group">
+                                    <label for="dorm-time-range" class="form-label">时间范围</label>
+                                    <select id="dorm-time-range" class="form-input">
+                                        <option value="daily">每天</option>
+                                        <option value="weekly">每周</option>
+                                        <option value="monthly">每月</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dorm-date" class="form-label">日期</label>
+                                    <input type="date" id="dorm-date" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dorm-class" class="form-label">班级</label>
+                                    <select id="dorm-class" class="form-input">
+                                        <option value="">所有班级</option>
+                                        <!-- 班级选项将通过JavaScript动态填充 -->
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-full py-1 px-4">
+                                    <i class="fa fa-download mr-1"></i> 导出Excel
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 背景动画层 -->
+    <div id="animationBackground" class="fixed inset-0 pointer-events-none opacity-20 z-[-1]"></div>
+
+    <!-- JavaScript -->
+    <script>
+        // 数据存储模块
+        const DataStore = {
+            // 初始化数据
+            init() {
+                if (!localStorage.getItem('classes')) {
+                    localStorage.setItem('classes', JSON.stringify([]));
+                }
+                if (!localStorage.getItem('students')) {
+                    localStorage.setItem('students', JSON.stringify([]));
+                }
+                if (!localStorage.getItem('leaveRecords')) {
+                    localStorage.setItem('leaveRecords', JSON.stringify([]));
+                }
+            },
+
+            // 班级数据操作
+            classes: {
+                getAll() {
+                    return JSON.parse(localStorage.getItem('classes')) || [];
+                },
+                getById(id) {
+                    return this.getAll().find(cls => cls.id === id);
+                },
+                add(cls) {
+                    const classes = this.getAll();
+                    classes.push(cls);
+                    localStorage.setItem('classes', JSON.stringify(classes));
+                    return cls;
+                },
+                addMany(newClasses) {
+                    const existingClasses = this.getAll();
+                    const classesMap = new Map(existingClasses.map(cls => [cls.name, cls]));
+                    
+                    newClasses.forEach(newClass => {
+                        if (!classesMap.has(newClass.name)) {
+                            newClass.id = `class-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                            existingClasses.push(newClass);
+                            classesMap.set(newClass.name, newClass);
+                        }
+                    });
+                    
+                    localStorage.setItem('classes', JSON.stringify(existingClasses));
+                    return existingClasses;
+                },
+                update(id, data) {
+                    const classes = this.getAll();
+                    const index = classes.findIndex(cls => cls.id === id);
+                    if (index !== -1) {
+                        classes[index] = { ...classes[index], ...data };
+                        localStorage.setItem('classes', JSON.stringify(classes));
+                        return classes[index];
+                    }
+                    return null;
+                },
+                delete(id) {
+                    const classes = this.getAll();
+                    const newClasses = classes.filter(cls => cls.id !== id);
+                    localStorage.setItem('classes', JSON.stringify(newClasses));
+                    
+                    // 同时删除该班级的学生
+                    const students = DataStore.students.getAll();
+                    const newStudents = students.filter(student => student.classId !== id);
+                    localStorage.setItem('students', JSON.stringify(newStudents));
+                    
+                    return newClasses;
+                },
+                deleteMany(ids) {
+                    const classes = this.getAll();
+                    const newClasses = classes.filter(cls => !ids.includes(cls.id));
+                    localStorage.setItem('classes', JSON.stringify(newClasses));
+                    
+                    // 同时删除这些班级的学生
+                    const students = DataStore.students.getAll();
+                    const newStudents = students.filter(student => !ids.includes(student.classId));
+                    localStorage.setItem('students', JSON.stringify(newStudents));
+                    
+                    return newClasses;
+                }
+            },
+
+            // 学生数据操作
+            students: {
+                getAll() {
+                    return JSON.parse(localStorage.getItem('students')) || [];
+                },
+                getById(id) {
+                    return this.getAll().find(student => student.id === id);
+                },
+                getByClassId(classId) {
+                    return this.getAll().filter(student => student.classId === classId);
+                },
+                add(student) {
+                    const students = this.getAll();
+                    students.push(student);
+                    localStorage.setItem('students', JSON.stringify(students));
+                    return student;
+                },
+                addMany(newStudents) {
+                    const existingStudents = this.getAll();
+                    const studentsMap = new Map(existingStudents.map(student => [`${student.classId}-${student.name}`, student]));
+                    
+                    newStudents.forEach(newStudent => {
+                        const key = `${newStudent.classId}-${newStudent.name}`;
+                        if (!studentsMap.has(key)) {
+                            newStudent.id = `student-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                            newStudent.status = 'normal';
+                            existingStudents.push(newStudent);
+                            studentsMap.set(key, newStudent);
+                        }
+                    });
+                    
+                    localStorage.setItem('students', JSON.stringify(existingStudents));
+                    return existingStudents;
+                },
+                update(id, data) {
+                    const students = this.getAll();
+                    const index = students.findIndex(student => student.id === id);
+                    if (index !== -1) {
+                        students[index] = { ...students[index], ...data };
+                        localStorage.setItem('students', JSON.stringify(students));
+                        return students[index];
+                    }
+                    return null;
+                },
+                delete(id) {
+                    const students = this.getAll();
+                    const newStudents = students.filter(student => student.id !== id);
+                    localStorage.setItem('students', JSON.stringify(newStudents));
+                    return newStudents;
+                },
+                deleteMany(ids) {
+                    const students = this.getAll();
+                    const newStudents = students.filter(student => !ids.includes(student.id));
+                    localStorage.setItem('students', JSON.stringify(newStudents));
+                    return newStudents;
+                }
+            },
+
+            // 请假记录数据操作
+            leaveRecords: {
+                getAll() {
+                    return JSON.parse(localStorage.getItem('leaveRecords')) || [];
+                },
+                getById(id) {
+                    return this.getAll().find(record => record.id === id);
+                },
+                getActive() {
+                    const now = new Date();
+                    return this.getAll().filter(record => {
+                        if (record.status !== 'active') return false;
+                        const endTime = new Date(record.endTime);
+                        return endTime > now;
+                    });
+                },
+                getToday() {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    
+                    return this.getAll().filter(record => {
+                        const startTime = new Date(record.startTime);
+                        return startTime >= today && startTime < tomorrow;
+                    });
+                },
+                getYesterday() {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    yesterday.setHours(0, 0, 0, 0);
+                    
+                    const today = new Date(yesterday);
+                    today.setDate(today.getDate() + 1);
+                    
+                    return this.getAll().filter(record => {
+                        const startTime = new Date(record.startTime);
+                        return startTime >= yesterday && startTime < today;
+                    });
+                },
+                add(record) {
+                    const records = this.getAll();
+                    records.push(record);
+                    localStorage.setItem('leaveRecords', JSON.stringify(records));
+                    
+                    // 更新学生状态
+                    if (record.status === 'active') {
+                        DataStore.students.update(record.studentId, { status: 'leave' });
+                    }
+                    
+                    return record;
+                },
+                update(id, data) {
+                    const records = this.getAll();
+                    const index = records.findIndex(record => record.id === id);
+                    if (index !== -1) {
+                        const oldRecord = records[index];
+                        records[index] = { ...oldRecord, ...data };
+                        localStorage.setItem('leaveRecords', JSON.stringify(records));
+                        
+                        // 更新学生状态
+                        if (data.status === 'cancelled' && oldRecord.status === 'active') {
+                            DataStore.students.update(oldRecord.studentId, { status: 'normal' });
+                        } else if (data.status === 'active' && oldRecord.status !== 'active') {
+                            DataStore.students.update(oldRecord.studentId, { status: 'leave' });
+                        }
+                        
+                        return records[index];
+                    }
+                    return null;
+                },
+                delete(id) {
+                    const records = this.getAll();
+                    const index = records.findIndex(record => record.id === id);
+                    if (index !== -1) {
+                        const record = records[index];
+                        const newRecords = records.filter(r => r.id !== id);
+                        localStorage.setItem('leaveRecords', JSON.stringify(newRecords));
+                        
+                        // 如果是活跃的请假记录，恢复学生状态
+                        if (record.status === 'active') {
+                            DataStore.students.update(record.studentId, { status: 'normal' });
+                        }
+                        
+                        return newRecords;
+                    }
+                    return null;
+                },
+                cleanupExpired() {
+                    const now = new Date();
+                    const records = this.getAll();
+                    const activeStudentIds = new Set();
+                    
+                    // 找出所有活跃的请假记录中的学生ID
+                    records.forEach(record => {
+                        if (record.status === 'active') {
+                            const endTime = new Date(record.endTime);
+                            if (endTime > now) {
+                                activeStudentIds.add(record.studentId);
+                            }
+                        }
+                    });
+                    
+                    // 更新过期的请假记录
+                    const updatedRecords = records.map(record => {
+                        if (record.status === 'active') {
+                            const endTime = new Date(record.endTime);
+                            if (endTime <= now) {
+                                return { ...record, status: 'expired' };
+                            }
+                        }
+                        return record;
+                    });
+                    
+                    localStorage.setItem('leaveRecords', JSON.stringify(updatedRecords));
+                    
+                    // 更新学生状态
+                    const students = DataStore.students.getAll();
+                    const updatedStudents = students.map(student => {
+                        if (student.status === 'leave' && !activeStudentIds.has(student.id)) {
+                            return { ...student, status: 'normal' };
+                        }
+                        return student;
+                    });
+                    
+                    localStorage.setItem('students', JSON.stringify(updatedStudents));
+                    
+                    return updatedRecords;
+                }
+            }
+        };
+
+        // 工具函数
+        const Utils = {
+            // 生成唯一ID
+            generateId(prefix = 'id') {
+                return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+            },
+            
+            // 格式化日期时间
+            formatDateTime(dateTimeString) {
+                if (!dateTimeString) return '';
+                const date = new Date(dateTimeString);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+            
+            // 格式化日期
+            formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            },
+            
+            // 格式化时间
+            formatTime(dateTimeString) {
+                if (!dateTimeString) return '';
+                const date = new Date(dateTimeString);
+                return date.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+            
+            // 获取当前日期时间（本地格式）
+            getCurrentDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            },
+            
+            // 获取当前日期
+            getCurrentDate() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            },
+            
+            // 检查日期是否为今天
+            isToday(dateString) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const date = new Date(dateString);
+                date.setHours(0, 0, 0, 0);
+                
+                return today.getTime() === date.getTime();
+            },
+            
+            // 下载Excel文件
+            downloadExcel(data, filename, columns) {
+                // 这里使用简单的CSV格式作为示例
+                // 在实际应用中，可以使用更复杂的库来生成真正的Excel文件
+                
+                // 创建CSV内容
+                let csvContent = columns.join(',') + '\n';
+                
+                data.forEach(item => {
+                    const row = columns.map(column => {
+                        const value = item[column] || '';
+                        // 处理包含逗号的字符串
+                        return value.includes(',') ? `"${value}"` : value;
+                    }).join(',');
+                    csvContent += row + '\n';
+                });
+                
+                // 创建Blob对象
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            
+            // 生成班级Excel模板
+            generateClassTemplate() {
+                const data = [
+                    { '班级名称': '2023级计算机1班' },
+                    { '班级名称': '2023级计算机2班' },
+                    { '班级名称': '2023级电子商务1班' }
+                ];
+                
+                this.downloadExcel(data, '班级导入模板.csv', ['班级名称']);
+            },
+            
+            // 生成学生Excel模板
+            generateStudentTemplate() {
+                const data = [
+                    { 
+                        '班级': '2023级计算机1班',
+                        '姓名': '张三',
+                        '性别': '男',
+                        '是否住宿生': '是',
+                        '宿舍号': '3号楼402室'
+                    },
+                    { 
+                        '班级': '2023级计算机1班',
+                        '姓名': '李四',
+                        '性别': '女',
+                        '是否住宿生': '否',
+                        '宿舍号': ''
+                    }
+                ];
+                
+                this.downloadExcel(data, '学生导入模板.csv', ['班级', '姓名', '性别', '是否住宿生', '宿舍号']);
+            },
+            
+            // 解析CSV文件
+            parseCSV(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        const content = e.target.result;
+                        const lines = content.split('\n');
+                        
+                        if (lines.length === 0) {
+                            reject(new Error('CSV文件为空'));
+                            return;
+                        }
+                        
+                        // 解析表头
+                        const headers = lines[0].split(',').map(header => header.trim());
+                        
+                        // 解析数据行
+                        const data = [];
+                        for (let i = 1; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (!line) continue;
+                            
+                            const values = line.split(',');
+                            const row = {};
+                            
+                            headers.forEach((header, index) => {
+                                row[header] = values[index] || '';
+                            });
+                            
+                            data.push(row);
+                        }
+                        
+                        resolve(data);
+                    };
+                    
+                    reader.onerror = () => {
+                        reject(new Error('读取文件失败'));
+                    };
+                    
+                    reader.readAsText(file);
+                });
+            },
+            
+            // 获取停餐选项文本
+            getMealOptionText(option) {
+                const options = {
+                    'none': '不停餐',
+                    'lunch': '停午餐',
+                    'dinner': '停晚餐',
+                    'both': '停午餐和晚餐'
+                };
+                return options[option] || option;
+            },
+            
+            // 获取住宿请假选项文本
+            getDormOptionText(option) {
+                const options = {
+                    'none': '午休晚休不请假',
+                    'noon': '午休请假',
+                    'night': '晚休请假',
+                    'both': '午休晚休都请假'
+                };
+                return options[option] || option;
+            },
+            
+            // 获取请假状态文本
+            getLeaveStatusText(status) {
+                const statuses = {
+                    'active': '进行中',
+                    'cancelled': '已取消',
+                    'expired': '已过期'
+                };
+                return statuses[status] || status;
+            },
+            
+            // 获取学生状态文本
+            getStudentStatusText(status) {
+                const statuses = {
+                    'normal': '正常',
+                    'leave': '请假中',
+                    'alert': '警报'
+                };
+                return statuses[status] || status;
+            },
+            
+            // 获取学生状态样式
+            getStudentStatusClass(status) {
+                const classes = {
+                    'normal': 'badge-success',
+                    'leave': 'badge-warning',
+                    'alert': 'badge-danger'
+                };
+                return classes[status] || 'badge-success';
+            },
+            
+            // 获取请假状态样式
+            getLeaveStatusClass(status) {
+                const classes = {
+                    'active': 'badge-warning',
+                    'cancelled': 'badge-danger',
+                    'expired': 'badge-success'
+                };
+                return classes[status] || 'badge-success';
+            },
+            
+            // 过滤请假记录
+            filterLeaveRecords(records, filters) {
+                return records.filter(record => {
+                    // 班级过滤
+                    if (filters.classId && record.classId !== filters.classId) {
+                        return false;
+                    }
+                    
+                    // 状态过滤
+                    if (filters.status && record.status !== filters.status) {
+                        return false;
+                    }
+                    
+                    // 搜索过滤
+                    if (filters.search) {
+                        const searchLower = filters.search.toLowerCase();
+                        const student = DataStore.students.getById(record.studentId);
+                        const className = DataStore.classes.getById(record.classId)?.name || '';
+                        
+                        if (!(student && (
+                            student.name.toLowerCase().includes(searchLower) ||
+                            className.toLowerCase().includes(searchLower) ||
+                            record.reason.toLowerCase().includes(searchLower)
+                        ))) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                });
+            },
+            
+            // 分页处理
+            paginate(data, page, pageSize) {
+                const startIndex = (page - 1) * pageSize;
+                const endIndex = startIndex + pageSize;
+                return data.slice(startIndex, endIndex);
+            },
+            
+            // 获取指定天数的日期
+            getDays(days) {
+                const result = [];
+                const today = new Date();
+                
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - i);
+                    
+                    result.push({
+                        date: date.toISOString().split('T')[0],
+                        label: date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+                    });
+                }
+                
+                return result;
+            },
+            
+            // 统计每天的请假数量
+            countLeavesByDay(days) {
+                const records = DataStore.leaveRecords.getAll();
+                const counts = {};
+                
+                // 初始化每天的计数为0
+                days.forEach(day => {
+                    counts[day.date] = 0;
+                });
+                
+                // 统计每天的请假数量
+                records.forEach(record => {
+                    const startDate = record.startTime.split('T')[0];
+                    if (counts.hasOwnProperty(startDate)) {
+                        counts[startDate]++;
+                    }
+                });
+                
+                return days.map(day => counts[day.date]);
+            },
+            
+            // 统计请假类型分布
+            countLeaveTypes() {
+                const records = DataStore.leaveRecords.getActive();
+                const types = {
+                    '病假': 0,
+                    '事假': 0,
+                    '旷课': 0,
+                    '迟到': 0,
+                    '其他': 0
+                };
+                
+                records.forEach(record => {
+                    const reason = record.reason.toLowerCase();
+                    if (reason.includes('病')) {
+                        types['病假']++;
+                    } else if (reason.includes('事')) {
+                        types['事假']++;
+                    } else if (reason.includes('旷')) {
+                        types['旷课']++;
+                    } else if (reason.includes('迟')) {
+                        types['迟到']++;
+                    } else {
+                        types['其他']++;
+                    }
+                });
+                
+                return types;
+            }
+        };
+
+        // UI渲染模块
+        const UIRenderer = {
+            // 初始化UI
+            init() {
+                // 初始化导航
+                this.initNavigation();
+                
+                // 初始化移动端菜单
+                this.initMobileMenu();
+                
+                // 初始化实时数据面板标签页
+                this.initRealtimeTabs();
+                
+                // 初始化表单事件
+                this.initForms();
+                
+                // 初始化数据
+                this.loadDashboardData();
+                this.loadClassList();
+                this.loadStudentList();
+                this.loadLeaveRecords();
+                this.loadRealtimeData();
+                this.loadExportForms();
+                
+                // 设置定时刷新
+                this.setupAutoRefresh();
+                
+                // 初始化背景动画
+                this.initBackgroundAnimation();
+            },
+            
+            // 初始化导航
+            initNavigation() {
+                const navItems = document.querySelectorAll('.nav-item');
+                
+                navItems.forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        
+                        // 更新导航项状态
+                        navItems.forEach(navItem => navItem.classList.remove('active'));
+                        item.classList.add('active');
+                        
+                        // 显示对应页面
+                        const pageId = item.getAttribute('data-page');
+                        this.showPage(pageId);
+                        
+                        // 关闭移动端菜单
+                        document.getElementById('mobile-menu').classList.add('hidden');
+                    });
+                });
+            },
+            
+            // 初始化移动端菜单
+            initMobileMenu() {
+                const mobileMenuButton = document.getElementById('mobile-menu-button');
+                const closeMobileMenuButton = document.getElementById('close-mobile-menu');
+                const mobileMenu = document.getElementById('mobile-menu');
+                
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.remove('hidden');
+                });
+                
+                closeMobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            },
+            
+            // 初始化实时数据面板标签页
+            initRealtimeTabs() {
+                const tabs = document.querySelectorAll('#realtime-tabs .tab');
+                
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        // 更新标签页状态
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // 显示对应内容
+                        const tabId = tab.getAttribute('data-tab');
+                        this.showTabContent(tabId);
+                    });
+                });
+            },
+            
+            // 初始化表单事件
+            initForms() {
+                // 班级导入相关
+                document.getElementById('download-class-template').addEventListener('click', () => {
+                    Utils.generateClassTemplate();
+                });
+                
+                document.getElementById('class-file-upload').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    this.importClasses(file);
+                    e.target.value = ''; // 重置文件输入
+                });
+                
+                // 学生导入相关
+                document.getElementById('download-student-template').addEventListener('click', () => {
+                    Utils.generateStudentTemplate();
+                });
+                
+                document.getElementById('student-file-upload').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    this.importStudents(file);
+                    e.target.value = ''; // 重置文件输入
+                });
+                
+                // 请假登记表单
+                document.getElementById('leave-request-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.submitLeaveRequest();
+                });
+                
+                document.getElementById('cancel-leave-request').addEventListener('click', () => {
+                    document.getElementById('leave-request-form').reset();
+                });
+                
+                // 班级选择联动学生选择
+                document.getElementById('leave-class').addEventListener('change', () => {
+                    this.updateStudentOptions();
+                });
+                
+                // 班级选择联动学生类型和可用选项
+                document.getElementById('leave-student').addEventListener('change', () => {
+                    this.updateLeaveOptions();
+                });
+                
+                // 请假记录筛选
+                document.getElementById('record-class-filter').addEventListener('change', () => {
+                    this.loadLeaveRecords();
+                });
+                
+                document.getElementById('record-status-filter').addEventListener('change', () => {
+                    this.loadLeaveRecords();
+                });
+                
+                document.getElementById('record-search').addEventListener('input', () => {
+                    this.loadLeaveRecords();
+                });
+                
+                // 学生列表筛选
+                document.getElementById('student-class-filter').addEventListener('change', () => {
+                    this.loadStudentList();
+                });
+                
+                document.getElementById('student-search').addEventListener('input', () => {
+                    this.loadStudentList();
+                });
+                
+                // 全选班级
+                document.getElementById('select-all-classes').addEventListener('change', (e) => {
+                    const checked = e.target.checked;
+                    document.querySelectorAll('#class-list input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.checked = checked;
+                    });
+                    this.updateDeleteButtons();
+                });
+                
+                // 全选学生
+                document.getElementById('select-all-students').addEventListener('change', (e) => {
+                    const checked = e.target.checked;
+                    document.querySelectorAll('#student-list input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.checked = checked;
+                    });
+                    this.updateDeleteButtons();
+                });
+                
+                // 班级选择变化时更新删除按钮状态
+                document.addEventListener('change', (e) => {
+                    if (e.target.closest('#class-list') && e.target.type === 'checkbox') {
+                        this.updateDeleteButtons();
+                    }
+                });
+                
+                // 学生选择变化时更新删除按钮状态
+                document.addEventListener('change', (e) => {
+                    if (e.target.closest('#student-list') && e.target.type === 'checkbox') {
+                        this.updateDeleteButtons();
+                    }
+                });
+                
+                // 删除选中班级
+                document.getElementById('delete-selected-classes').addEventListener('click', () => {
+                    if (confirm('确定要删除选中的班级吗？此操作也会删除这些班级的学生数据。')) {
+                        const selectedIds = Array.from(document.querySelectorAll('#class-list input[type="checkbox"]:checked'))
+                            .map(checkbox => checkbox.value);
+                        
+                        if (selectedIds.length > 0) {
+                            DataStore.classes.deleteMany(selectedIds);
+                            this.loadClassList();
+                            this.loadStudentList();
+                            this.loadDashboardData();
+                        }
+                    }
+                });
+                
+                // 删除选中学生
+                document.getElementById('delete-selected-students').addEventListener('click', () => {
+                    if (confirm('确定要删除选中的学生吗？')) {
+                        const selectedIds = Array.from(document.querySelectorAll('#student-list input[type="checkbox"]:checked'))
+                            .map(checkbox => checkbox.value);
+                        
+                        if (selectedIds.length > 0) {
+                            DataStore.students.deleteMany(selectedIds);
+                            this.loadStudentList();
+                            this.loadDashboardData();
+                        }
+                    }
+                });
+                
+                // 请假记录分页
+                document.getElementById('prev-page').addEventListener('click', () => {
+                    this.currentPage = Math.max(1, this.currentPage - 1);
+                    this.loadLeaveRecords();
+                });
+                
+                document.getElementById('next-page').addEventListener('click', () => {
+                    this.currentPage = this.currentPage + 1;
+                    this.loadLeaveRecords();
+                });
+                
+                // 数据导出表单
+                document.getElementById('security-export-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.exportSecurityData();
+                });
+                
+                document.getElementById('meal-export-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.exportMealData();
+                });
+                
+                document.getElementById('dorm-export-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.exportDormData();
+                });
+                
+                // 时间筛选按钮
+                document.querySelectorAll('.time-filter').forEach(button => {
+                    button.addEventListener('click', () => {
+                        document.querySelectorAll('.time-filter').forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        
+                        const days = parseInt(button.getAttribute('data-days'));
+                        this.updateLeaveTrendChart(days);
+                    });
+                });
+            },
+            
+            // 显示指定页面
+            showPage(pageId) {
+                const pages = document.querySelectorAll('.page');
+                pages.forEach(page => page.classList.add('hidden'));
+                
+                const targetPage = document.getElementById(`${pageId}-page`);
+                if (targetPage) {
+                    targetPage.classList.remove('hidden');
+                    
+                    // 根据页面ID执行特定的加载逻辑
+                    switch (pageId) {
+                        case 'dashboard':
+                            this.loadDashboardData();
+                            break;
+                        case 'classes':
+                            this.loadClassList();
+                            break;
+                        case 'students':
+                            this.loadStudentList();
+                            break;
+                        case 'leave-request':
+                            this.loadLeaveRequestForm();
+                            break;
+                        case 'leave-records':
+                            this.loadLeaveRecords();
+                            break;
+                        case 'realtime-panel':
+                            this.loadRealtimeData();
+                            break;
+                        case 'data-export':
+                            this.loadExportForms();
+                            break;
+                    }
+                }
+            },
+            
+            // 导航到指定页面
+            navigateTo(pageId) {
+                const navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(item => {
+                    if (item.getAttribute('data-page') === pageId) {
+                        item.click();
+                    }
+                });
+            },
+            
+            // 显示指定标签页内容
+            showTabContent(tabId) {
+                const tabPanes = document.querySelectorAll('.tab-pane');
+                tabPanes.forEach(pane => pane.classList.add('hidden'));
+                
+                const targetPane = document.getElementById(`${tabId}-content`);
+                if (targetPane) {
+                    targetPane.classList.remove('hidden');
+                }
+            },
+            
+            // 加载仪表盘数据
+            loadDashboardData() {
+                // 清理过期的请假记录
+                DataStore.leaveRecords.cleanupExpired();
+                
+                // 获取数据
+                const classes = DataStore.classes.getAll();
+                const students = DataStore.students.getAll();
+                const todayLeaves = DataStore.leaveRecords.getToday();
+                const yesterdayLeaves = DataStore.leaveRecords.getYesterday();
+                const activeLeaves = DataStore.leaveRecords.getActive();
+                const alertCount = activeLeaves.filter(record => record.isAlert).length;
+                
+                // 更新数据卡片
+                document.getElementById('total-classes').textContent = classes.length;
+                document.getElementById('total-students').textContent = students.length;
+                document.getElementById('today-leaves').textContent = todayLeaves.length;
+                document.getElementById('alert-count').textContent = alertCount;
+                
+                // 更新今日请假趋势
+                const todayTrend = document.getElementById('today-leaves-trend');
+                const yesterdayCount = yesterdayLeaves.length;
+                const todayCount = todayLeaves.length;
+                
+                if (yesterdayCount === 0) {
+                    todayTrend.innerHTML = '';
+                } else {
+                    const change = ((todayCount - yesterdayCount) / yesterdayCount * 100).toFixed(1);
+                    const isUp = todayCount >= yesterdayCount;
+                    const trendClass = isUp ? 'trend-up' : 'trend-down';
+                    const trendIcon = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
+                    
+                    todayTrend.innerHTML = `<span class="${trendClass}"><i class="fa ${trendIcon} mr-1"></i>${Math.abs(change)}%</span>`;
+                }
+                
+                // 更新今日请假详情
+                this.updateTodayLeaveDetails(todayLeaves);
+                
+                // 更新请假趋势图表
+                this.updateLeaveTrendChart(7);
+                
+                // 更新请假类型分布图表
+                this.updateLeaveTypeChart();
+            },
+            
+            // 更新今日请假详情
+            updateTodayLeaveDetails(records) {
+                const container = document.getElementById('today-leave-details');
+                
+                if (records.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500 py-4">暂无今日请假记录</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                records.forEach(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    if (!student || !cls) return;
+                    
+                    const statusClass = record.isAlert ? 'badge-danger' : Utils.getLeaveStatusClass(record.status);
+                    const statusText = record.isAlert ? '警报' : Utils.getLeaveStatusText(record.status);
+                    
+                    html += `
+                        <tr ${record.isAlert ? 'class="alert"' : ''}>
+                            <td>${cls.name}</td>
+                            <td>${student.name}</td>
+                            <td>${Utils.formatDateTime(record.startTime)} - ${Utils.formatDateTime(record.endTime)}</td>
+                            <td>${record.reason}</td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            },
+            
+            // 更新请假趋势图表
+            updateLeaveTrendChart(days = 7) {
+                const daysData = Utils.getDays(days);
+                const counts = Utils.countLeavesByDay(daysData);
+                
+                const ctx = document.getElementById('leave-trend-chart').getContext('2d');
+                
+                // 销毁旧图表（如果存在）
+                if (this.leaveTrendChart) {
+                    this.leaveTrendChart.destroy();
+                }
+                
+                // 创建新图表
+                this.leaveTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: daysData.map(day => day.label),
+                        datasets: [{
+                            label: '请假次数',
+                            data: counts,
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            tension: 0, // 使用折线而非曲线
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: 'rgba(59, 130, 246, 1)',
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { 
+                                grid: { 
+                                    display: false 
+                                } 
+                            },
+                            y: { 
+                                beginAtZero: true,
+                                grid: { 
+                                    borderDash: [2, 4] 
+                                },
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                titleColor: '#1e293b',
+                                bodyColor: '#1e293b',
+                                borderColor: '#e2e8f0',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `请假次数: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            // 更新请假类型分布图表
+            updateLeaveTypeChart() {
+                const typeCounts = Utils.countLeaveTypes();
+                const labels = Object.keys(typeCounts);
+                const data = Object.values(typeCounts);
+                
+                const ctx = document.getElementById('leave-type-chart').getContext('2d');
+                
+                // 销毁旧图表（如果存在）
+                if (this.leaveTypeChart) {
+                    this.leaveTypeChart.destroy();
+                }
+                
+                // 创建新图表
+                this.leaveTypeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                'rgba(16, 185, 129, 0.8)',  // 绿色
+                                'rgba(59, 130, 246, 0.8)',  // 蓝色
+                                'rgba(239, 68, 68, 0.8)',   // 红色
+                                'rgba(245, 158, 11, 0.8)',  // 橙色
+                                'rgba(100, 116, 139, 0.8)'  // 灰色
+                            ],
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                titleColor: '#1e293b',
+                                bodyColor: '#1e293b',
+                                borderColor: '#e2e8f0',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${context.label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            // 加载班级列表
+            loadClassList() {
+                const classes = DataStore.classes.getAll();
+                const container = document.getElementById('class-list');
+                
+                if (classes.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-4">暂无班级数据，请导入班级</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                classes.forEach(cls => {
+                    const studentCount = DataStore.students.getByClassId(cls.id).length;
+                    
+                    html += `
+                        <tr>
+                            <td>
+                                <input type="checkbox" value="${cls.id}" class="class-checkbox">
+                            </td>
+                            <td>${cls.name}</td>
+                            <td>${studentCount}</td>
+                            <td>
+                                <button class="text-danger hover:text-red-700 delete-class" data-id="${cls.id}">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                
+                // 添加删除班级事件
+                document.querySelectorAll('.delete-class').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        
+                        const classId = button.getAttribute('data-id');
+                        const cls = DataStore.classes.getById(classId);
+                        
+                        if (cls && confirm(`确定要删除班级"${cls.name}"吗？此操作也会删除该班级的学生数据。`)) {
+                            DataStore.classes.delete(classId);
+                            this.loadClassList();
+                            this.loadStudentList();
+                            this.loadDashboardData();
+                        }
+                    });
+                });
+                
+                // 更新班级选择下拉框
+                this.updateClassOptions();
+            },
+            
+            // 更新班级选择下拉框
+            updateClassOptions() {
+                const classes = DataStore.classes.getAll();
+                const selectElements = [
+                    document.getElementById('leave-class'),
+                    document.getElementById('student-class-filter'),
+                    document.getElementById('record-class-filter'),
+                    document.getElementById('security-class'),
+                    document.getElementById('meal-class'),
+                    document.getElementById('dorm-class')
+                ];
+                
+                selectElements.forEach(select => {
+                    if (!select) return;
+                    
+                    // 保存当前选中值
+                    const currentValue = select.value;
+                    
+                    // 清除现有选项（保留第一个空选项）
+                    select.innerHTML = select.options[0] ? select.options[0].outerHTML : '';
+                    
+                    // 添加班级选项
+                    classes.forEach(cls => {
+                        const option = document.createElement('option');
+                        option.value = cls.id;
+                        option.textContent = cls.name;
+                        select.appendChild(option);
+                    });
+                    
+                    // 恢复选中值
+                    if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+                        select.value = currentValue;
+                    }
+                });
+            },
+            
+            // 加载学生列表
+            loadStudentList() {
+                const classes = DataStore.classes.getAll();
+                const students = DataStore.students.getAll();
+                const container = document.getElementById('student-list');
+                
+                // 应用筛选
+                const classFilter = document.getElementById('student-class-filter').value;
+                const searchTerm = document.getElementById('student-search').value.toLowerCase();
+                
+                let filteredStudents = students;
+                
+                if (classFilter) {
+                    filteredStudents = filteredStudents.filter(student => student.classId === classFilter);
+                }
+                
+                if (searchTerm) {
+                    filteredStudents = filteredStudents.filter(student => {
+                        const cls = classes.find(c => c.id === student.classId);
+                        return (
+                            student.name.toLowerCase().includes(searchTerm) ||
+                            (cls && cls.name.toLowerCase().includes(searchTerm))
+                        );
+                    });
+                }
+                
+                if (filteredStudents.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-gray-500 py-4">暂无学生数据，请导入学生</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                filteredStudents.forEach(student => {
+                    const cls = classes.find(c => c.id === student.classId);
+                    const statusClass = Utils.getStudentStatusClass(student.status);
+                    const statusText = Utils.getStudentStatusText(student.status);
+                    const studentType = student.isBoarding ? '住宿生' : '走读生';
+                    
+                    html += `
+                        <tr>
+                            <td>
+                                <input type="checkbox" value="${student.id}" class="student-checkbox">
+                            </td>
+                            <td>${cls ? cls.name : ''}</td>
+                            <td>${student.name}</td>
+                            <td>${student.gender}</td>
+                            <td>${studentType}</td>
+                            <td>${student.dormitory || '-'}</td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            },
+            
+            // 初始化时分秒下拉菜单
+            initTimeSelects() {
+                // 初始化小时下拉菜单（0-23）
+                const hourSelects = ['leave-start-hour', 'leave-end-hour'];
+                hourSelects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    // 保留默认选项，清除其他选项
+                    if (select.options.length > 1) {
+                        // 如果已经有选项（除了默认的），清空并保留第一个默认选项
+                        const defaultOption = select.options[0];
+                        select.innerHTML = '';
+                        select.appendChild(defaultOption);
+                    }
+                    // 添加0-23小时选项
+                    for (let i = 0; i < 24; i++) {
+                        const option = document.createElement('option');
+                        option.value = String(i).padStart(2, '0');
+                        option.textContent = String(i).padStart(2, '0');
+                        select.appendChild(option);
+                    }
+                });
+                
+                // 初始化分钟下拉菜单（0-59）
+                const minuteSelects = ['leave-start-minute', 'leave-end-minute'];
+                minuteSelects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    // 保留默认选项，清除其他选项
+                    if (select.options.length > 1) {
+                        const defaultOption = select.options[0];
+                        select.innerHTML = '';
+                        select.appendChild(defaultOption);
+                    }
+                    // 添加0-59分钟选项
+                    for (let i = 0; i < 60; i++) {
+                        const option = document.createElement('option');
+                        option.value = String(i).padStart(2, '0');
+                        option.textContent = String(i).padStart(2, '0');
+                        select.appendChild(option);
+                    }
+                });
+                
+            },
+            
+            // 组合日期和时间为ISO格式字符串
+            combineDateTime(dateId, hourId, minuteId) {
+                const date = document.getElementById(dateId).value;
+                const hour = document.getElementById(hourId).value;
+                const minute = document.getElementById(minuteId).value;
+                
+                if (!date || !hour || !minute) {
+                    return null;
+                }
+                
+                return `${date}T${hour}:${minute}`;
+            },
+            
+            // 设置日期和时间字段
+            setDateTime(dateId, hourId, minuteId, dateTimeString) {
+                if (!dateTimeString) return;
+                
+                const dateTime = new Date(dateTimeString);
+                if (isNaN(dateTime.getTime())) return;
+                
+                document.getElementById(dateId).value = dateTime.toISOString().split('T')[0];
+                document.getElementById(hourId).value = String(dateTime.getHours()).padStart(2, '0');
+                document.getElementById(minuteId).value = String(dateTime.getMinutes()).padStart(2, '0');
+            },
+            
+            // 加载请假登记表单
+            loadLeaveRequestForm() {
+                // 初始化时分下拉菜单
+                this.initTimeSelects();
+                
+                // 更新班级选项
+                this.updateClassOptions();
+                
+                // 设置默认时间
+                const now = new Date();
+                
+                // 默认开始时间为当前时间
+                this.setDateTime('leave-start-date', 'leave-start-hour', 'leave-start-minute', now.toISOString());
+                
+                // 默认结束时间为当前时间加1小时
+                const endTime = new Date(now);
+                endTime.setHours(now.getHours() + 1);
+                this.setDateTime('leave-end-date', 'leave-end-hour', 'leave-end-minute', endTime.toISOString());
+                
+                // 重置表单
+                document.getElementById('leave-request-form').reset();
+                
+                // 重新设置默认时间（因为reset会清除）
+                this.setDateTime('leave-start-date', 'leave-start-hour', 'leave-start-minute', now.toISOString());
+                this.setDateTime('leave-end-date', 'leave-end-hour', 'leave-end-minute', endTime.toISOString());
+                
+                // 更新学生选项
+                this.updateStudentOptions();
+                
+                // 更新请假选项
+                this.updateLeaveOptions();
+            },
+            
+            // 更新学生选项
+            updateStudentOptions() {
+                const classId = document.getElementById('leave-class').value;
+                const studentSelect = document.getElementById('leave-student');
+                
+                // 清除现有选项
+                studentSelect.innerHTML = '';
+                
+                if (!classId) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '请先选择班级';
+                    studentSelect.appendChild(option);
+                    return;
+                }
+                
+                const students = DataStore.students.getByClassId(classId);
+                
+                if (students.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '该班级暂无学生数据';
+                    studentSelect.appendChild(option);
+                    return;
+                }
+                
+                // 添加请选择选项
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '请选择学生';
+                studentSelect.appendChild(defaultOption);
+                
+                // 添加学生选项
+                students.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student.id;
+                    option.textContent = student.name;
+                    studentSelect.appendChild(option);
+                });
+            },
+            
+            // 更新请假选项
+            updateLeaveOptions() {
+                const studentId = document.getElementById('leave-student').value;
+                const mealOptions = document.getElementById('meal-options');
+                const dormOptions = document.getElementById('dorm-options');
+                
+                // 默认显示所有选项
+                mealOptions.querySelectorAll('div').forEach(div => div.classList.remove('hidden'));
+                dormOptions.querySelectorAll('div').forEach(div => div.classList.remove('hidden'));
+                
+                if (!studentId) return;
+                
+                const student = DataStore.students.getById(studentId);
+                
+                if (!student) return;
+                
+                // 如果是走读生，隐藏停晚餐选项
+                if (!student.isBoarding) {
+                    document.getElementById('meal-dinner').parentElement.classList.add('hidden');
+                    document.getElementById('meal-both').parentElement.classList.add('hidden');
+                    
+                    // 如果当前选中了隐藏的选项，改为选中停午餐
+                    const selectedMealOption = document.querySelector('input[name="meal-option"]:checked').value;
+                    if (selectedMealOption === 'dinner' || selectedMealOption === 'both') {
+                        document.getElementById('meal-lunch').checked = true;
+                    }
+                    
+                    // 隐藏晚休请假选项
+                    document.getElementById('dorm-night').parentElement.classList.add('hidden');
+                    document.getElementById('dorm-both').parentElement.classList.add('hidden');
+                    
+                    // 如果当前选中了隐藏的选项，改为选中午休请假
+                    const selectedDormOption = document.querySelector('input[name="dorm-option"]:checked').value;
+                    if (selectedDormOption === 'night' || selectedDormOption === 'both') {
+                        document.getElementById('dorm-noon').checked = true;
+                    }
+                }
+            },
+            
+            // 提交请假请求
+            submitLeaveRequest() {
+                const classId = document.getElementById('leave-class').value;
+                const studentId = document.getElementById('leave-student').value;
+                const startTime = this.combineDateTime('leave-start-date', 'leave-start-hour', 'leave-start-minute');
+                const endTime = this.combineDateTime('leave-end-date', 'leave-end-hour', 'leave-end-minute');
+                const reason = document.getElementById('leave-reason').value;
+                const mealOption = document.querySelector('input[name="meal-option"]:checked').value;
+                const dormOption = document.querySelector('input[name="dorm-option"]:checked').value;
+                
+                // 表单验证
+                if (!classId || !studentId || !startTime || !endTime || !reason) {
+                    alert('请填写完整的请假信息');
+                    return;
+                }
+                
+                // 验证时间逻辑
+                const startDateTime = new Date(startTime);
+                const endDateTime = new Date(endTime);
+                
+                if (startDateTime >= endDateTime) {
+                    alert('请假结束时间必须晚于开始时间');
+                    return;
+                }
+                
+                // 创建请假记录
+                const leaveRecord = {
+                    id: Utils.generateId('leave'),
+                    classId,
+                    studentId,
+                    startTime,
+                    endTime,
+                    reason,
+                    mealOption,
+                    dormOption,
+                    status: 'active',
+                    isAlert: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                // 保存请假记录
+                DataStore.leaveRecords.add(leaveRecord);
+                
+                // 显示成功消息
+                alert('请假登记成功');
+                
+                // 重置表单
+                document.getElementById('leave-request-form').reset();
+                
+                // 更新相关页面
+                this.loadDashboardData();
+                this.loadLeaveRecords();
+                this.loadRealtimeData();
+                this.loadStudentList();
+            },
+            
+            // 加载请假记录
+            loadLeaveRecords() {
+                // 清理过期的请假记录
+                DataStore.leaveRecords.cleanupExpired();
+                
+                // 获取所有请假记录
+                let records = DataStore.leaveRecords.getAll();
+                
+                // 应用筛选
+                const classFilter = document.getElementById('record-class-filter').value;
+                const statusFilter = document.getElementById('record-status-filter').value;
+                const searchTerm = document.getElementById('record-search').value;
+                
+                records = Utils.filterLeaveRecords(records, {
+                    classId: classFilter,
+                    status: statusFilter,
+                    search: searchTerm
+                });
+                
+                // 按开始时间降序排序
+                records.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+                
+                // 分页处理
+                this.currentPage = this.currentPage || 1;
+                const pageSize = 10;
+                const paginatedRecords = Utils.paginate(records, this.currentPage, pageSize);
+                
+                // 更新分页信息
+                document.getElementById('records-showing').textContent = paginatedRecords.length;
+                document.getElementById('records-total').textContent = records.length;
+                
+                // 更新分页按钮状态
+                document.getElementById('prev-page').disabled = this.currentPage === 1;
+                document.getElementById('next-page').disabled = this.currentPage * pageSize >= records.length;
+                
+                // 更新请假记录列表
+                const container = document.getElementById('leave-records-list');
+                
+                if (paginatedRecords.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="text-center text-gray-500 py-4">暂无请假记录</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                paginatedRecords.forEach(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    if (!student || !cls) return;
+                    
+                    const statusClass = record.isAlert ? 'badge-danger' : Utils.getLeaveStatusClass(record.status);
+                    const statusText = record.isAlert ? '警报' : Utils.getLeaveStatusText(record.status);
+                    const mealOptionText = Utils.getMealOptionText(record.mealOption);
+                    const dormOptionText = Utils.getDormOptionText(record.dormOption);
+                    
+                    // 确定操作按钮状态
+                    const isActive = record.status === 'active';
+                    const now = new Date();
+                    const endTime = new Date(record.endTime);
+                    const canCancel = isActive && endTime > now;
+                    
+                    html += `
+                        <tr ${record.isAlert ? 'class="alert"' : ''}>
+                            <td>${cls.name}</td>
+                            <td>${student.name}</td>
+                            <td>${Utils.formatDateTime(record.startTime)}</td>
+                            <td>${Utils.formatDateTime(record.endTime)}</td>
+                            <td>${record.reason}</td>
+                            <td>${mealOptionText}</td>
+                            <td>${dormOptionText}</td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                            <td>
+                                <div class="flex space-x-2">
+                                    <button class="text-primary hover:text-blue-700 ${canCancel ? '' : 'opacity-50 cursor-not-allowed'}" 
+                                            ${canCancel ? `data-id="${record.id}" onclick="UIRenderer.cancelLeave('${record.id}')"` : ''}>
+                                        <i class="fa fa-times-circle"></i> 撤回
+                                    </button>
+                                    <button class="text-warning hover:text-yellow-700 ${isActive ? '' : 'opacity-50 cursor-not-allowed'}" 
+                                            ${isActive ? `data-id="${record.id}" onclick="UIRenderer.toggleAlert('${record.id}')"` : ''}>
+                                        <i class="fa fa-exclamation-triangle"></i> ${record.isAlert ? '取消警报' : '警报'}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            },
+            
+            // 取消请假
+            cancelLeave(recordId) {
+                if (confirm('确定要撤回这条请假记录吗？')) {
+                    DataStore.leaveRecords.update(recordId, { status: 'cancelled' });
+                    
+                    // 更新相关页面
+                    this.loadDashboardData();
+                    this.loadLeaveRecords();
+                    this.loadRealtimeData();
+                    this.loadStudentList();
+                }
+            },
+            
+            // 切换警报状态
+            toggleAlert(recordId) {
+                const record = DataStore.leaveRecords.getById(recordId);
+                
+                if (record) {
+                    const newAlertStatus = !record.isAlert;
+                    
+                    if (newAlertStatus && !confirm('确定要将这条请假记录标记为警报吗？')) {
+                        return;
+                    }
+                    
+                    DataStore.leaveRecords.update(recordId, { isAlert: newAlertStatus });
+                    
+                    // 更新相关页面
+                    this.loadDashboardData();
+                    this.loadLeaveRecords();
+                    this.loadRealtimeData();
+                }
+            },
+            
+            // 加载实时数据面板
+            loadRealtimeData() {
+                // 清理过期的请假记录
+                DataStore.leaveRecords.cleanupExpired();
+                
+                // 获取活跃的请假记录
+                const activeRecords = DataStore.leaveRecords.getActive();
+                
+                // 更新数据概览卡片
+                document.getElementById('security-count').textContent = activeRecords.length;
+                
+                // 筛选需要停餐的记录
+                const mealRecords = activeRecords.filter(record => record.mealOption !== 'none');
+                document.getElementById('meal-count').textContent = mealRecords.length;
+                
+                // 筛选住宿生的请假记录
+                const dormRecords = activeRecords.filter(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    return student && student.isBoarding && record.dormOption !== 'none';
+                });
+                document.getElementById('dorm-count').textContent = dormRecords.length;
+                
+                // 更新安保部分
+                this.updateSecurityPanel(activeRecords);
+                
+                // 更新停餐部分
+                this.updateMealPanel(activeRecords);
+                
+                // 更新宿舍部分
+                this.updateDormPanel(activeRecords);
+            },
+            
+            // 更新安保部分
+            updateSecurityPanel(records) {
+                const container = document.getElementById('security-records');
+                
+                if (records.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500 py-4">暂无请假记录</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                records.forEach(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    if (!student || !cls) return;
+                    
+                    html += `
+                        <tr ${record.isAlert ? 'class="alert"' : ''}>
+                            <td>${cls.name}</td>
+                            <td>${student.name}</td>
+                            <td>${Utils.formatDateTime(record.startTime)}</td>
+                            <td>${Utils.formatDateTime(record.endTime)}</td>
+                            <td>${record.reason}</td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            },
+            
+            // 更新停餐部分
+            updateMealPanel(records) {
+                const container = document.getElementById('meal-records');
+                
+                // 筛选需要停餐的记录
+                const mealRecords = records.filter(record => record.mealOption !== 'none');
+                
+                if (mealRecords.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center text-gray-500 py-4">暂无停餐记录</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                mealRecords.forEach(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    if (!student || !cls) return;
+                    
+                    // 对于走读生，只显示停午餐选项
+                    let mealOptionText = Utils.getMealOptionText(record.mealOption);
+                    if (!student.isBoarding) {
+                        mealOptionText = '停午餐';
+                    }
+                    
+                    html += `
+                        <tr ${record.isAlert ? 'class="alert"' : ''}>
+                            <td>${cls.name}</td>
+                            <td>${student.name}</td>
+                            <td>${mealOptionText}</td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            },
+            
+            // 更新宿舍部分
+            updateDormPanel(records) {
+                const container = document.getElementById('dorm-records');
+                
+                // 筛选住宿生的请假记录
+                const dormRecords = records.filter(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    return student && student.isBoarding && record.dormOption !== 'none';
+                });
+                
+                if (dormRecords.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-4">暂无宿舍请假记录</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                dormRecords.forEach(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    if (!student || !cls) return;
+                    
+                    html += `
+                        <tr ${record.isAlert ? 'class="alert"' : ''}>
+                            <td>${cls.name}</td>
+                            <td>${student.name}</td>
+                            <td>${student.dormitory || '-'}</td>
+                            <td>${Utils.getDormOptionText(record.dormOption)}</td>
+                        </tr>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            },
+            
+            // 加载导出表单
+            loadExportForms() {
+                // 更新班级选项
+                this.updateClassOptions();
+                
+                // 设置默认日期为今天
+                const today = Utils.getCurrentDate();
+                document.getElementById('security-date').value = today;
+                document.getElementById('meal-date').value = today;
+                document.getElementById('dorm-date').value = today;
+            },
+            
+            // 导出安保数据
+            exportSecurityData() {
+                const timeRange = document.getElementById('security-time-range').value;
+                const date = document.getElementById('security-date').value;
+                const classId = document.getElementById('security-class').value;
+                
+                // 获取数据
+                let records = DataStore.leaveRecords.getAll();
+                
+                // 筛选数据
+                if (classId) {
+                    records = records.filter(record => record.classId === classId);
+                }
+                
+                // 根据时间范围筛选
+                const targetDate = new Date(date);
+                records = records.filter(record => {
+                    const recordDate = new Date(record.startTime);
+                    
+                    if (timeRange === 'daily') {
+                        return recordDate.toDateString() === targetDate.toDateString();
+                    } else if (timeRange === 'weekly') {
+                        const recordWeek = Math.floor(recordDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+                        const targetWeek = Math.floor(targetDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+                        return recordWeek === targetWeek;
+                    } else if (timeRange === 'monthly') {
+                        return recordDate.getFullYear() === targetDate.getFullYear() &&
+                               recordDate.getMonth() === targetDate.getMonth();
+                    }
+                    
+                    return true;
+                });
+                
+                // 准备导出数据
+                const exportData = records.map(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    return {
+                        '班级': cls ? cls.name : '',
+                        '学生': student ? student.name : '',
+                        '请假开始时间': Utils.formatDateTime(record.startTime),
+                        '请假结束时间': Utils.formatDateTime(record.endTime),
+                        '请假理由': record.reason,
+                        '状态': Utils.getLeaveStatusText(record.status)
+                    };
+                });
+                
+                // 导出文件
+                const filename = `安保请假数据_${Utils.formatDate(date)}.csv`;
+                Utils.downloadExcel(exportData, filename, ['班级', '学生', '请假开始时间', '请假结束时间', '请假理由', '状态']);
+            },
+            
+            // 导出停餐数据
+            exportMealData() {
+                const timeRange = document.getElementById('meal-time-range').value;
+                const date = document.getElementById('meal-date').value;
+                const classId = document.getElementById('meal-class').value;
+                
+                // 获取数据
+                let records = DataStore.leaveRecords.getAll();
+                
+                // 筛选需要停餐的记录
+                records = records.filter(record => record.mealOption !== 'none');
+                
+                // 筛选数据
+                if (classId) {
+                    records = records.filter(record => record.classId === classId);
+                }
+                
+                // 根据时间范围筛选
+                const targetDate = new Date(date);
+                records = records.filter(record => {
+                    const recordDate = new Date(record.startTime);
+                    
+                    if (timeRange === 'daily') {
+                        return recordDate.toDateString() === targetDate.toDateString();
+                    } else if (timeRange === 'weekly') {
+                        const recordWeek = Math.floor(recordDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+                        const targetWeek = Math.floor(targetDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+                        return recordWeek === targetWeek;
+                    } else if (timeRange === 'monthly') {
+                        return recordDate.getFullYear() === targetDate.getFullYear() &&
+                               recordDate.getMonth() === targetDate.getMonth();
+                    }
+                    
+                    return true;
+                });
+                
+                // 准备导出数据
+                const exportData = records.map(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    // 对于走读生，只显示停午餐选项
+                    let mealOptionText = Utils.getMealOptionText(record.mealOption);
+                    if (student && !student.isBoarding) {
+                        mealOptionText = '停午餐';
+                    }
+                    
+                    return {
+                        '班级': cls ? cls.name : '',
+                        '学生': student ? student.name : '',
+                        '停餐情况': mealOptionText,
+                        '请假时间': `${Utils.formatDateTime(record.startTime)} - ${Utils.formatDateTime(record.endTime)}`,
+                        '状态': Utils.getLeaveStatusText(record.status)
+                    };
+                });
+                
+                // 导出文件
+                const filename = `停餐数据_${Utils.formatDate(date)}.csv`;
+                Utils.downloadExcel(exportData, filename, ['班级', '学生', '停餐情况', '请假时间', '状态']);
+            },
+            
+            // 导出宿舍数据
+            exportDormData() {
+                const timeRange = document.getElementById('dorm-time-range').value;
+                const date = document.getElementById('dorm-date').value;
+                const classId = document.getElementById('dorm-class').value;
+                
+                // 获取数据
+                let records = DataStore.leaveRecords.getAll();
+                
+                // 筛选住宿生的请假记录
+                records = records.filter(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    return student && student.isBoarding && record.dormOption !== 'none';
+                });
+                
+                // 筛选数据
+                if (classId) {
+                    records = records.filter(record => record.classId === classId);
+                }
+                
+                // 根据时间范围筛选
+                const targetDate = new Date(date);
+                records = records.filter(record => {
+                    const recordDate = new Date(record.startTime);
+                    
+                    if (timeRange === 'daily') {
+                        return recordDate.toDateString() === targetDate.toDateString();
+                    } else if (timeRange === 'weekly') {
+                        const recordWeek = Math.floor(recordDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+                        const targetWeek = Math.floor(targetDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+                        return recordWeek === targetWeek;
+                    } else if (timeRange === 'monthly') {
+                        return recordDate.getFullYear() === targetDate.getFullYear() &&
+                               recordDate.getMonth() === targetDate.getMonth();
+                    }
+                    
+                    return true;
+                });
+                
+                // 准备导出数据
+                const exportData = records.map(record => {
+                    const student = DataStore.students.getById(record.studentId);
+                    const cls = DataStore.classes.getById(record.classId);
+                    
+                    return {
+                        '班级': cls ? cls.name : '',
+                        '学生': student ? student.name : '',
+                        '宿舍号': student ? student.dormitory || '' : '',
+                        '请假情况': Utils.getDormOptionText(record.dormOption),
+                        '请假时间': `${Utils.formatDateTime(record.startTime)} - ${Utils.formatDateTime(record.endTime)}`,
+                        '状态': Utils.getLeaveStatusText(record.status)
+                    };
+                });
+                
+                // 导出文件
+                const filename = `宿舍请假数据_${Utils.formatDate(date)}.csv`;
+                Utils.downloadExcel(exportData, filename, ['班级', '学生', '宿舍号', '请假情况', '请假时间', '状态']);
+            },
+            
+            // 导入班级
+            importClasses(file) {
+                Utils.parseCSV(file)
+                    .then(data => {
+                        if (data.length === 0) {
+                            alert('CSV文件中没有数据');
+                            return;
+                        }
+                        
+                        // 检查是否包含班级名称列
+                        const firstRow = data[0];
+                        if (!firstRow['班级名称'] && !firstRow['班级']) {
+                            alert('CSV文件格式不正确，请确保包含"班级名称"列');
+                            return;
+                        }
+                        
+                        // 处理导入数据
+                        const newClasses = data.map(row => {
+                            const className = row['班级名称'] || row['班级'];
+                            if (!className) return null;
+                            
+                            return {
+                                name: className.trim(),
+                                studentCount: 0
+                            };
+                        }).filter(cls => cls !== null);
+                        
+                        if (newClasses.length === 0) {
+                            alert('没有有效的班级数据');
+                            return;
+                        }
+                        
+                        // 导入班级
+                        DataStore.classes.addMany(newClasses);
+                        
+                        // 更新界面
+                        this.loadClassList();
+                        this.loadDashboardData();
+                        
+                        alert(`成功导入 ${newClasses.length} 个班级`);
+                    })
+                    .catch(error => {
+                        alert(`导入失败: ${error.message}`);
+                        console.error('导入班级失败', error);
+                    });
+            },
+            
+            // 导入学生
+            importStudents(file) {
+                Utils.parseCSV(file)
+                    .then(data => {
+                        if (data.length === 0) {
+                            alert('CSV文件中没有数据');
+                            return;
+                        }
+                        
+                        // 检查是否包含必要的列
+                        const firstRow = data[0];
+                        const requiredColumns = ['班级', '姓名', '性别', '是否住宿生'];
+                        
+                        const missingColumns = requiredColumns.filter(column => !firstRow[column]);
+                        if (missingColumns.length > 0) {
+                            alert(`CSV文件格式不正确，缺少必要的列: ${missingColumns.join(', ')}`);
+                            return;
+                        }
+                        
+                        // 获取所有班级
+                        const classes = DataStore.classes.getAll();
+                        const classMap = new Map(classes.map(cls => [cls.name, cls]));
+                        
+                        // 处理导入数据
+                        const newStudents = [];
+                        const invalidRows = [];
+                        
+                        data.forEach((row, index) => {
+                            const className = row['班级'].trim();
+                            const name = row['姓名'].trim();
+                            const gender = row['性别'].trim();
+                            const isBoardingStr = row['是否住宿生'].trim().toLowerCase();
+                            const dormitory = row['宿舍号'] ? row['宿舍号'].trim() : '';
+                            
+                            // 验证必要字段
+                            if (!className || !name || !gender || !isBoardingStr) {
+                                invalidRows.push(`第 ${index + 1} 行：缺少必要的字段`);
+                                return;
+                            }
+                            
+                            // 验证班级是否存在
+                            const cls = classMap.get(className);
+                            if (!cls) {
+                                invalidRows.push(`第 ${index + 1} 行：班级"${className}"不存在`);
+                                return;
+                            }
+                            
+                            // 验证性别
+                            if (!['男', '女'].includes(gender)) {
+                                invalidRows.push(`第 ${index + 1} 行：性别必须是"男"或"女"`);
+                                return;
+                            }
+                            
+                            // 处理是否住宿生
+                            const isBoarding = ['是', '住宿', '住宿生', 'true', '1'].includes(isBoardingStr);
+                            
+                            // 添加到新学生列表
+                            newStudents.push({
+                                classId: cls.id,
+                                name,
+                                gender,
+                                isBoarding,
+                                dormitory: isBoarding ? dormitory : ''
+                            });
+                        });
+                        
+                        // 显示无效行信息
+                        if (invalidRows.length > 0) {
+                            alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.join('\n')}`);
+                        }
+                        
+                        // 导入学生
+                        if (newStudents.length > 0) {
+                            DataStore.students.addMany(newStudents);
+                            
+                            // 更新界面
+                            this.loadStudentList();
+                            this.loadDashboardData();
+                            
+                            alert(`成功导入 ${newStudents.length} 个学生`);
+                        } else {
+                            alert('没有有效的学生数据');
+                        }
+                    })
+                    .catch(error => {
+                        alert(`导入失败: ${error.message}`);
+                        console.error('导入学生失败', error);
+                    });
+            },
+            
+            // 更新删除按钮状态
+            updateDeleteButtons() {
+                // 班级删除按钮
+                const hasSelectedClasses = document.querySelectorAll('#class-list input[type="checkbox"]:checked').length > 0;
+                document.getElementById('delete-selected-classes').disabled = !hasSelectedClasses;
+                
+                // 学生删除按钮
+                const hasSelectedStudents = document.querySelectorAll('#student-list input[type="checkbox"]:checked').length > 0;
+                document.getElementById('delete-selected-students').disabled = !hasSelectedStudents;
+            },
+            
+            // 设置定时刷新
+            setupAutoRefresh() {
+                // 每30秒自动刷新一次数据
+                setInterval(() => {
+                    this.loadDashboardData();
+                    this.loadLeaveRecords();
+                    this.loadRealtimeData();
+                }, 30000);
+            },
+            
+            // 初始化背景动画
+            initBackgroundAnimation() {
+                const canvas = document.createElement('canvas');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                document.getElementById('animationBackground').appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                let points = [];
+                let mouseX = 0;
+                let mouseY = 0;
+
+                // 创建初始点阵
+                for (let i = 0; i < 50; i++) {
+                    points.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: Math.random() * 1.5 + 0.5,
+                        speedX: (Math.random() - 0.5) * 0.3,
+                        speedY: (Math.random() - 0.5) * 0.3
+                    });
+                }
+
+                // 鼠标移动监听
+                document.addEventListener('mousemove', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    mouseX = e.clientX - rect.left;
+                    mouseY = e.clientY - rect.top;
+                });
+
+                // 动画循环
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.strokeStyle = '#3b82f6';
+                    ctx.lineWidth = 0.3;
+                
+                    for (let i = 0; i < points.length; i++) {
+                        const point = points[i];
+                    
+                        // 更新点的位置
+                        point.x += point.speedX;
+                        point.y += point.speedY;
+                    
+                        // 边界检查
+                        if (point.x < 0 || point.x > canvas.width) point.speedX *= -1;
+                        if (point.y < 0 || point.y > canvas.height) point.speedY *= -1;
+                    
+                        // 绘制点
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.fill();
+                    
+                        // 绘制连接线
+                        for (let j = i + 1; j < points.length; j++) {
+                            const otherPoint = points[j];
+                            const distance = Math.sqrt(
+                                Math.pow(point.x - otherPoint.x, 2) + 
+                                Math.pow(point.y - otherPoint.y, 2)
+                            );
+                        
+                            if (distance < 100) {
+                                ctx.beginPath();
+                                ctx.moveTo(point.x, point.y);
+                                ctx.lineTo(otherPoint.x, otherPoint.y);
+                                ctx.stroke();
+                            }
+                        }
+                    
+                        // 鼠标交互 - 让点轻微向鼠标位置偏移
+                        const mouseDistance = Math.sqrt(
+                            Math.pow(point.x - mouseX, 2) + 
+                            Math.pow(point.y - mouseY, 2)
+                        );
+                    
+                        if (mouseDistance < 150) {
+                            const angle = Math.atan2(mouseY - point.y, mouseX - point.x);
+                            point.x += Math.cos(angle) * 0.2;
+                            point.y += Math.sin(angle) * 0.2;
+                        }
+                    }
+                
+                    requestAnimationFrame(animate);
+                }
+
+                animate();
+
+                // 窗口大小调整
+                window.addEventListener('resize', () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+            }
+        };
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化数据存储
+            DataStore.init();
+            
+            // 初始化UI
+            UIRenderer.init();
+        });
+
+        // 暴露UIRenderer方法到全局，以便在HTML中调用
+        window.UIRenderer = UIRenderer;
+    </script>
+</body>
+</html>
