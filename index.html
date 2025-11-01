@@ -952,35 +952,6 @@
     <!-- 背景动画层 -->
     <div id="animationBackground" class="fixed inset-0 pointer-events-none opacity-20 z-[-1]"></div>
 
-    <!-- 测试按钮 -->
-    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
-        <button onclick="testDatabaseConnection()" style="
-            background: #10b981;
-            color: white;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        ">
-            🧪 测试数据库连接
-        </button>
-        
-        <button onclick="testImportFunctions()" style="
-            background: #8b5cf6;
-            color: white;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        ">
-            🧪 测试导入函数
-        </button>
-    </div>
-
     <!-- JavaScript -->
     <script>
         // Supabase 配置
@@ -1229,24 +1200,10 @@
                     return (data || []).map(toCamelCase);
                 },
                 async add(student) {
-                    if (!supabaseClient) {
-                        throw new Error('Supabase客户端未初始化');
-                    }
                     if (!student.id) {
                         student.id = `student-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
                     }
-                    // 只保留数据库需要的字段
-                    const cleanStudent = {
-                        id: student.id,
-                        classId: student.classId,
-                        name: student.name,
-                        gender: student.gender,
-                        isBoarding: student.isBoarding || false,
-                        dormitory: student.dormitory || null,
-                        status: student.status || 'normal'
-                    };
-                    const dbData = toSnakeCase(cleanStudent);
-                    console.log('添加学生:', dbData);
+                    const dbData = toSnakeCase({ ...student, classId: student.classId });
                     const { data, error } = await supabaseClient
                         .from('students')
                         .insert(dbData)
@@ -1257,7 +1214,6 @@
                         console.error('添加学生失败:', error);
                         throw error;
                     }
-                    console.log('成功添加学生:', data);
                     return toCamelCase(data);
                 },
                 async addMany(newStudents) {
@@ -2000,7 +1956,7 @@
                     const file = e.target.files[0];
                     if (!file) return;
                     
-                    UIRenderer.importClasses(file);
+                    this.importClasses(file);
                     e.target.value = ''; // 重置文件输入
                 });
                 
@@ -2013,7 +1969,7 @@
                     const file = e.target.files[0];
                     if (!file) return;
                     
-                    UIRenderer.importStudents(file);
+                    this.importStudents(file);
                     e.target.value = ''; // 重置文件输入
                 });
                 
@@ -2159,166 +2115,6 @@
                 });
             },
             
-            // 导入班级函数
-            importClasses: async function(file) {
-                console.log("🧪 测试：importClasses函数被调用了！");
-                console.log("开始导入班级文件:", file.name);
-                
-                try {
-                    const data = await Utils.parseCSV(file);
-                    
-                    if (data.length === 0) {
-                        alert('CSV文件中没有数据');
-                        return;
-                    }
-
-                    console.log('解析到的CSV数据:', data);
-                    
-                    // 处理导入数据
-                    const newClasses = [];
-                    const invalidRows = [];
-                    
-                    data.forEach((row, index) => {
-                        console.log(`处理第 ${index + 1} 行:`, row);
-                        
-                        // 尝试不同的列名来获取班级名称
-                        const className = row['班级名称'] || row['班级'] || row['name'] || row['className'] || row['class_name'];
-                        
-                        if (!className) {
-                            invalidRows.push(`第 ${index + 1} 行：没有找到班级名称（支持的列名：班级名称、班级、name、className、class_name）`);
-                            return;
-                        }
-                        
-                        const trimmedName = className.toString().trim();
-                        if (!trimmedName) {
-                            invalidRows.push(`第 ${index + 1} 行：班级名称为空`);
-                            return;
-                        }
-                        
-                        newClasses.push({
-                            id: 'class-' + Date.now() + '-' + index + '-' + Math.random().toString(36).substr(2, 5),
-                            name: trimmedName
-                        });
-                    });
-
-                    // 显示无效行信息
-                    if (invalidRows.length > 0) {
-                        alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.slice(0, 5).join('\n')}${invalidRows.length > 5 ? '\n...（只显示前5条）' : ''}`);
-                    }
-
-                    if (newClasses.length === 0) {
-                        alert('没有有效的班级数据可以导入');
-                        return;
-                    }
-
-                    console.log('准备导入的班级数据:', newClasses);
-                    
-                    // 导入班级
-                    const result = await DataStore.classes.addMany(newClasses);
-                    
-                    // 更新界面
-                    await this.loadClassList();
-                    await this.loadDashboardData();
-                    
-                    alert(`成功导入 ${newClasses.length} 个班级`);
-                    
-                } catch (error) {
-                    console.error('导入班级失败:', error);
-                    alert(`导入失败: ${error.message}\n\n请检查CSV文件格式是否正确。`);
-                }
-            },
-
-            // 导入学生函数
-            importStudents: async function(file) {
-                console.log("🧪 测试：importStudents函数被调用了！");
-                console.log("开始导入学生文件:", file.name);
-                
-                try {
-                    const data = await Utils.parseCSV(file);
-                    
-                    if (data.length === 0) {
-                        alert('CSV文件中没有数据');
-                        return;
-                    }
-
-                    console.log('解析到的学生CSV数据:', data);
-                    
-                    // 获取所有班级
-                    const classes = await DataStore.classes.getAll();
-                    const classMap = new Map(classes.map(cls => [cls.name, cls]));
-                    
-                    // 处理导入数据
-                    const newStudents = [];
-                    const invalidRows = [];
-                    
-                    data.forEach((row, index) => {
-                        console.log(`处理学生数据第 ${index + 1} 行:`, row);
-                        
-                        // 尝试不同的列名
-                        const className = row['班级'] || row['class'] || row['className'] || row['class_name'];
-                        const studentName = row['姓名'] || row['学生姓名'] || row['name'] || row['studentName'];
-                        const gender = row['性别'] || row['gender'];
-                        const isBoardingStr = (row['是否住宿生'] || row['住宿'] || row['is_boarding'] || row['isBoarding'] || '否').toString().toLowerCase();
-                        const dormitory = row['宿舍号'] || row['宿舍'] || row['dormitory'] || '';
-                        
-                        // 验证必要字段
-                        if (!className || !studentName || !gender) {
-                            invalidRows.push(`第 ${index + 1} 行：缺少必要的字段（需要班级、姓名、性别）`);
-                            return;
-                        }
-                        
-                        // 验证班级是否存在
-                        const cls = classMap.get(className.toString().trim());
-                        if (!cls) {
-                            invalidRows.push(`第 ${index + 1} 行：班级"${className}"不存在，请先导入该班级`);
-                            return;
-                        }
-                        
-                        // 验证性别
-                        const normalizedGender = gender.toString().trim();
-                        if (!['男', '女'].includes(normalizedGender)) {
-                            invalidRows.push(`第 ${index + 1} 行：性别必须是"男"或"女"，当前为"${gender}"`);
-                            return;
-                        }
-                        
-                        // 处理是否住宿生
-                        const isBoarding = ['是', '住宿', '住宿生', 'true', '1', 'yes'].includes(isBoardingStr);
-                        
-                        // 添加到新学生列表
-                        newStudents.push({
-                            id: 'student-' + Date.now() + '-' + index + '-' + Math.random().toString(36).substr(2, 5),
-                            classId: cls.id,
-                            name: studentName.toString().trim(),
-                            gender: normalizedGender,
-                            isBoarding: isBoarding,
-                            dormitory: isBoarding ? dormitory.toString().trim() : '',
-                            status: 'normal'
-                        });
-                    });
-                        
-                    // 显示无效行信息
-                    if (invalidRows.length > 0) {
-                        alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.slice(0, 5).join('\n')}${invalidRows.length > 5 ? '\n...（只显示前5条）' : ''}`);
-                    }
-                    
-                    // 导入学生
-                    if (newStudents.length > 0) {
-                        const result = await DataStore.students.addMany(newStudents);
-                        
-                        // 更新界面
-                        await this.loadStudentList();
-                        await this.loadDashboardData();
-                        
-                        alert(`成功导入 ${newStudents.length} 个学生`);
-                    } else {
-                        alert('没有有效的学生数据可以导入');
-                    }
-                } catch (error) {
-                    console.error('导入学生失败:', error);
-                    alert(`导入失败: ${error.message}\n\n请检查CSV文件格式是否正确。`);
-                }
-            },
-            
             // 显示指定页面
             showPage(pageId) {
                 const pages = document.querySelectorAll('.page');
@@ -2331,22 +2127,22 @@
                     // 根据页面ID执行特定的加载逻辑
                     switch (pageId) {
                         case 'dashboard':
-                            this.loadDashboardData();
+                            await this.loadDashboardData();
                             break;
                         case 'classes':
-                            this.loadClassList();
+                            await this.loadClassList();
                             break;
                         case 'students':
-                            this.loadStudentList();
+                            await this.loadStudentList();
                             break;
                         case 'leave-request':
-                            this.loadLeaveRequestForm();
+                            await this.loadLeaveRequestForm();
                             break;
                         case 'leave-records':
-                            this.loadLeaveRecords();
+                            await this.loadLeaveRecords();
                             break;
                         case 'realtime-panel':
-                            this.loadRealtimeData();
+                            await this.loadRealtimeData();
                             break;
                         case 'data-export':
                             this.loadExportForms();
@@ -3450,6 +3246,142 @@
                 Utils.downloadExcel(exportData, filename, ['班级', '学生', '宿舍号', '请假情况', '请假时间', '状态']);
             },
             
+            // 导入班级
+            async importClasses(file) {
+                try {
+                    const data = await Utils.parseCSV(file);
+                    
+                    if (data.length === 0) {
+                        alert('CSV文件中没有数据');
+                        return;
+                    }
+                    
+                    // 检查是否包含班级名称列
+                    const firstRow = data[0];
+                    if (!firstRow['班级名称'] && !firstRow['班级']) {
+                        alert('CSV文件格式不正确，请确保包含"班级名称"列');
+                        return;
+                    }
+                    
+                    // 处理导入数据
+                    const newClasses = data.map(row => {
+                        const className = row['班级名称'] || row['班级'];
+                        if (!className) return null;
+                        
+                        return {
+                            name: className.trim()
+                        };
+                    }).filter(cls => cls !== null);
+                    
+                    if (newClasses.length === 0) {
+                        alert('没有有效的班级数据');
+                        return;
+                    }
+                    
+                    // 导入班级
+                    await DataStore.classes.addMany(newClasses);
+                    
+                    // 更新界面
+                    await this.loadClassList();
+                    await this.loadDashboardData();
+                    
+                    alert(`成功导入 ${newClasses.length} 个班级`);
+                } catch (error) {
+                    alert(`导入失败: ${error.message}`);
+                    console.error('导入班级失败', error);
+                }
+            },
+            
+            // 导入学生
+            async importStudents(file) {
+                try {
+                    const data = await Utils.parseCSV(file);
+                    
+                    if (data.length === 0) {
+                        alert('CSV文件中没有数据');
+                        return;
+                    }
+                    
+                    // 检查是否包含必要的列
+                    const firstRow = data[0];
+                    const requiredColumns = ['班级', '姓名', '性别', '是否住宿生'];
+                    
+                    const missingColumns = requiredColumns.filter(column => !firstRow[column]);
+                    if (missingColumns.length > 0) {
+                        alert(`CSV文件格式不正确，缺少必要的列: ${missingColumns.join(', ')}`);
+                        return;
+                    }
+                    
+                    // 获取所有班级
+                    const classes = await DataStore.classes.getAll();
+                    const classMap = new Map(classes.map(cls => [cls.name, cls]));
+                    
+                    // 处理导入数据
+                    const newStudents = [];
+                    const invalidRows = [];
+                    
+                    data.forEach((row, index) => {
+                        const className = row['班级'].trim();
+                        const name = row['姓名'].trim();
+                        const gender = row['性别'].trim();
+                        const isBoardingStr = row['是否住宿生'].trim().toLowerCase();
+                        const dormitory = row['宿舍号'] ? row['宿舍号'].trim() : '';
+                        
+                        // 验证必要字段
+                        if (!className || !name || !gender || !isBoardingStr) {
+                            invalidRows.push(`第 ${index + 1} 行：缺少必要的字段`);
+                            return;
+                        }
+                        
+                        // 验证班级是否存在
+                        const cls = classMap.get(className);
+                        if (!cls) {
+                            invalidRows.push(`第 ${index + 1} 行：班级"${className}"不存在`);
+                            return;
+                        }
+                        
+                        // 验证性别
+                        if (!['男', '女'].includes(gender)) {
+                            invalidRows.push(`第 ${index + 1} 行：性别必须是"男"或"女"`);
+                            return;
+                        }
+                        
+                        // 处理是否住宿生
+                        const isBoarding = ['是', '住宿', '住宿生', 'true', '1'].includes(isBoardingStr);
+                        
+                        // 添加到新学生列表
+                        newStudents.push({
+                            classId: cls.id,
+                            name,
+                            gender,
+                            isBoarding,
+                            dormitory: isBoarding ? dormitory : ''
+                        });
+                    });
+                        
+                    // 显示无效行信息
+                    if (invalidRows.length > 0) {
+                        alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.join('\n')}`);
+                    }
+                    
+                    // 导入学生
+                    if (newStudents.length > 0) {
+                        await DataStore.students.addMany(newStudents);
+                        
+                        // 更新界面
+                        await this.loadStudentList();
+                        await this.loadDashboardData();
+                        
+                        alert(`成功导入 ${newStudents.length} 个学生`);
+                    } else {
+                        alert('没有有效的学生数据');
+                    }
+                } catch (error) {
+                    alert(`导入失败: ${error.message}`);
+                    console.error('导入学生失败', error);
+                }
+            },
+            
             // 更新删除按钮状态
             updateDeleteButtons() {
                 // 班级删除按钮
@@ -3566,101 +3498,6 @@
             }
         };
 
-        // 测试函数
-        async function testDatabaseConnection() {
-            console.log("开始测试数据库连接...");
-            
-            try {
-                // 测试1: 检查Supabase客户端
-                if (!supabaseClient) {
-                    alert("❌ Supabase客户端未初始化");
-                    return;
-                }
-                console.log("✅ Supabase客户端正常");
-
-                // 测试2: 尝试插入测试班级
-                const testClass = {
-                    id: 'test-class-' + Date.now(),
-                    name: '测试班级-' + Date.now()
-                };
-                
-                console.log("准备插入测试班级:", testClass);
-                const { data: classData, error: classError } = await supabaseClient
-                    .from('classes')
-                    .insert([testClass])
-                    .select();
-                    
-                if (classError) {
-                    console.error("❌ 插入班级失败:", classError);
-                    alert("插入班级失败: " + classError.message);
-                    return;
-                }
-                console.log("✅ 插入班级成功:", classData);
-
-                // 测试3: 查询班级数据
-                const { data: classes, error: queryError } = await supabaseClient
-                    .from('classes')
-                    .select('*');
-                    
-                if (queryError) {
-                    console.error("❌ 查询班级失败:", queryError);
-                    alert("查询班级失败: " + queryError.message);
-                    return;
-                }
-                console.log("✅ 查询班级成功:", classes);
-
-                // 测试4: 删除测试班级
-                const { error: deleteError } = await supabaseClient
-                    .from('classes')
-                    .delete()
-                    .eq('id', testClass.id);
-                    
-                if (deleteError) {
-                    console.error("❌ 删除测试班级失败:", deleteError);
-                    alert("删除测试班级失败: " + deleteError.message);
-                    return;
-                }
-                console.log("✅ 删除测试班级成功");
-
-                alert("🎉 数据库连接测试成功！\n所有操作都正常工作。");
-                
-            } catch (error) {
-                console.error("💥 测试过程中出现异常:", error);
-                alert("测试失败: " + error.toString());
-            }
-        }
-
-        function testImportFunctions() {
-            console.log("=== 开始测试导入函数 ===");
-            
-            // 测试 UIRenderer 对象
-            if (typeof UIRenderer === 'undefined') {
-                console.error("❌ UIRenderer 对象不存在");
-                alert("❌ UIRenderer 对象不存在");
-                return;
-            }
-            console.log("✅ UIRenderer 对象存在");
-            
-            // 测试 importClasses 函数
-            if (typeof UIRenderer.importClasses === 'undefined') {
-                console.error("❌ importClasses 函数不存在");
-                alert("❌ importClasses 函数不存在");
-                return;
-            }
-            console.log("✅ importClasses 函数存在");
-            
-            // 测试 importStudents 函数
-            if (typeof UIRenderer.importStudents === 'undefined') {
-                console.error("❌ importStudents 函数不存在");
-                alert("❌ importStudents 函数不存在");
-                return;
-            }
-            console.log("✅ importStudents 函数存在");
-            
-            console.log("=== 所有导入函数测试通过 ===");
-            alert("🎉 所有导入函数都存在！现在可以测试文件导入了。");
-        }
-
         // 初始化应用
         document.addEventListener('DOMContentLoaded', () => {
             // 初始化数据存储
@@ -3672,8 +3509,6 @@
 
         // 暴露UIRenderer方法到全局，以便在HTML中调用
         window.UIRenderer = UIRenderer;
-        window.testDatabaseConnection = testDatabaseConnection;
-        window.testImportFunctions = testImportFunctions;
     </script>
 </body>
 </html>
