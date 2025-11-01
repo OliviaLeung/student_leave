@@ -10,6 +10,8 @@
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Tailwind 配置 -->
     <script>
         tailwind.config = {
@@ -950,274 +952,602 @@
     <!-- 背景动画层 -->
     <div id="animationBackground" class="fixed inset-0 pointer-events-none opacity-20 z-[-1]"></div>
 
+    <!-- 测试按钮 -->
+    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
+        <button onclick="testDatabaseConnection()" style="
+            background: #10b981;
+            color: white;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        ">
+            🧪 测试数据库连接
+        </button>
+        
+        <button onclick="testImportFunctions()" style="
+            background: #8b5cf6;
+            color: white;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        ">
+            🧪 测试导入函数
+        </button>
+    </div>
+
     <!-- JavaScript -->
     <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://jyjinhopxlvlcrinircu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5amluaG9weGx2bGNyaW5pcmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMDA0MTUsImV4cCI6MjA3NzU3NjQxNX0.4ix789JWEV0NoiC0Ze2OBvc7FdUuBZx3tD-rlVIGhq4';
+        
+        // 初始化 Supabase 客户端
+        let supabaseClient;
+        try {
+            if (typeof supabase === 'undefined') {
+                console.error('Supabase库未加载，请检查网络连接');
+                alert('错误：Supabase库加载失败，请刷新页面重试');
+            } else {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase客户端初始化成功');
+            }
+        } catch (error) {
+            console.error('Supabase客户端初始化失败:', error);
+            alert('错误：无法连接到数据库，请刷新页面重试');
+        }
+
+        // 辅助函数：转换数据库字段名（snake_case -> camelCase）
+        function toCamelCase(obj) {
+            if (!obj) return obj;
+            const converted = {};
+            Object.keys(obj).forEach(key => {
+                let camelKey = key;
+                if (key.includes('_')) {
+                    camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+                }
+                converted[camelKey] = obj[key];
+            });
+            return converted;
+        }
+
+        // 辅助函数：转换JavaScript字段名（camelCase -> snake_case）
+        function toSnakeCase(obj) {
+            if (!obj) return obj;
+            const converted = {};
+            Object.keys(obj).forEach(key => {
+                let snakeKey = key;
+                if (key !== key.toUpperCase()) {
+                    snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                }
+                converted[snakeKey] = obj[key];
+            });
+            return converted;
+        }
+
         // 数据存储模块
         const DataStore = {
-            // 初始化数据
-            init() {
-                if (!localStorage.getItem('classes')) {
-                    localStorage.setItem('classes', JSON.stringify([]));
-                }
-                if (!localStorage.getItem('students')) {
-                    localStorage.setItem('students', JSON.stringify([]));
-                }
-                if (!localStorage.getItem('leaveRecords')) {
-                    localStorage.setItem('leaveRecords', JSON.stringify([]));
-                }
+            // 初始化数据（Supabase不需要初始化，但保留此方法以保持兼容性）
+            async init() {
+                // Supabase不需要初始化
+                return Promise.resolve();
             },
 
             // 班级数据操作
             classes: {
-                getAll() {
-                    return JSON.parse(localStorage.getItem('classes')) || [];
-                },
-                getById(id) {
-                    return this.getAll().find(cls => cls.id === id);
-                },
-                add(cls) {
-                    const classes = this.getAll();
-                    classes.push(cls);
-                    localStorage.setItem('classes', JSON.stringify(classes));
-                    return cls;
-                },
-                addMany(newClasses) {
-                    const existingClasses = this.getAll();
-                    const classesMap = new Map(existingClasses.map(cls => [cls.name, cls]));
-                    
-                    newClasses.forEach(newClass => {
-                        if (!classesMap.has(newClass.name)) {
-                            newClass.id = `class-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-                            existingClasses.push(newClass);
-                            classesMap.set(newClass.name, newClass);
-                        }
-                    });
-                    
-                    localStorage.setItem('classes', JSON.stringify(existingClasses));
-                    return existingClasses;
-                },
-                update(id, data) {
-                    const classes = this.getAll();
-                    const index = classes.findIndex(cls => cls.id === id);
-                    if (index !== -1) {
-                        classes[index] = { ...classes[index], ...data };
-                        localStorage.setItem('classes', JSON.stringify(classes));
-                        return classes[index];
+                async getAll() {
+                    if (!supabaseClient) {
+                        console.error('Supabase客户端未初始化');
+                        return [];
                     }
-                    return null;
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from('classes')
+                            .select('*')
+                            .order('created_at', { ascending: true });
+                        
+                        if (error) {
+                            console.error('获取班级列表失败:', error);
+                            return [];
+                        }
+                        return (data || []).map(toCamelCase);
+                    } catch (error) {
+                        console.error('获取班级列表异常:', error);
+                        return [];
+                    }
                 },
-                delete(id) {
-                    const classes = this.getAll();
-                    const newClasses = classes.filter(cls => cls.id !== id);
-                    localStorage.setItem('classes', JSON.stringify(newClasses));
+                async getById(id) {
+                    const { data, error } = await supabaseClient
+                        .from('classes')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
                     
-                    // 同时删除该班级的学生
-                    const students = DataStore.students.getAll();
-                    const newStudents = students.filter(student => student.classId !== id);
-                    localStorage.setItem('students', JSON.stringify(newStudents));
-                    
-                    return newClasses;
+                    if (error) {
+                        console.error('获取班级失败:', error);
+                        return null;
+                    }
+                    return toCamelCase(data);
                 },
-                deleteMany(ids) {
-                    const classes = this.getAll();
-                    const newClasses = classes.filter(cls => !ids.includes(cls.id));
-                    localStorage.setItem('classes', JSON.stringify(newClasses));
+                async add(cls) {
+                    if (!supabaseClient) {
+                        throw new Error('Supabase客户端未初始化');
+                    }
+                    if (!cls.id) {
+                        cls.id = `class-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                    }
+                    // 只保留数据库需要的字段
+                    const cleanClass = {
+                        id: cls.id,
+                        name: cls.name
+                    };
+                    const dbData = toSnakeCase(cleanClass);
+                    console.log('添加班级:', dbData);
+                    const { data, error } = await supabaseClient
+                        .from('classes')
+                        .insert(dbData)
+                        .select()
+                        .single();
                     
-                    // 同时删除这些班级的学生
-                    const students = DataStore.students.getAll();
-                    const newStudents = students.filter(student => !ids.includes(student.classId));
-                    localStorage.setItem('students', JSON.stringify(newStudents));
+                    if (error) {
+                        console.error('添加班级失败:', error);
+                        throw error;
+                    }
+                    console.log('成功添加班级:', data);
+                    return toCamelCase(data);
+                },
+                async addMany(newClasses) {
+                    try {
+                        const existingClasses = await this.getAll();
+                        const classesMap = new Map(existingClasses.map(cls => [cls.name, cls]));
+                        
+                        const classesToAdd = [];
+                        newClasses.forEach(newClass => {
+                            if (!classesMap.has(newClass.name)) {
+                                if (!newClass.id) {
+                                    newClass.id = `class-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                                }
+                                // 只保留数据库需要的字段
+                                const cleanClass = {
+                                    id: newClass.id,
+                                    name: newClass.name
+                                };
+                                classesToAdd.push(toSnakeCase(cleanClass));
+                            }
+                        });
+                        
+                        if (classesToAdd.length === 0) {
+                            return existingClasses;
+                        }
+                        
+                        console.log('准备插入班级:', classesToAdd);
+                        const { data, error } = await supabaseClient
+                            .from('classes')
+                            .insert(classesToAdd)
+                            .select();
+                        
+                        if (error) {
+                            console.error('批量添加班级失败:', error);
+                            alert(`导入失败: ${error.message}`);
+                            return existingClasses;
+                        }
+                        
+                        console.log('成功插入班级:', data);
+                        return [...existingClasses, ...(data || []).map(toCamelCase)];
+                    } catch (error) {
+                        console.error('批量添加班级异常:', error);
+                        alert(`导入失败: ${error.message}`);
+                        return [];
+                    }
+                },
+                async update(id, data) {
+                    const dbData = toSnakeCase(data);
+                    const { data: result, error } = await supabaseClient
+                        .from('classes')
+                        .update(dbData)
+                        .eq('id', id)
+                        .select()
+                        .single();
                     
-                    return newClasses;
+                    if (error) {
+                        console.error('更新班级失败:', error);
+                        return null;
+                    }
+                    return toCamelCase(result);
+                },
+                async delete(id) {
+                    const { error } = await supabaseClient
+                        .from('classes')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) {
+                        console.error('删除班级失败:', error);
+                        throw error;
+                    }
+                    
+                    return await this.getAll();
+                },
+                async deleteMany(ids) {
+                    const { error } = await supabaseClient
+                        .from('classes')
+                        .delete()
+                        .in('id', ids);
+                    
+                    if (error) {
+                        console.error('批量删除班级失败:', error);
+                        throw error;
+                    }
+                    
+                    return await this.getAll();
                 }
             },
 
             // 学生数据操作
             students: {
-                getAll() {
-                    return JSON.parse(localStorage.getItem('students')) || [];
-                },
-                getById(id) {
-                    return this.getAll().find(student => student.id === id);
-                },
-                getByClassId(classId) {
-                    return this.getAll().filter(student => student.classId === classId);
-                },
-                add(student) {
-                    const students = this.getAll();
-                    students.push(student);
-                    localStorage.setItem('students', JSON.stringify(students));
-                    return student;
-                },
-                addMany(newStudents) {
-                    const existingStudents = this.getAll();
-                    const studentsMap = new Map(existingStudents.map(student => [`${student.classId}-${student.name}`, student]));
+                async getAll() {
+                    const { data, error } = await supabaseClient
+                        .from('students')
+                        .select('*')
+                        .order('created_at', { ascending: true });
                     
-                    newStudents.forEach(newStudent => {
-                        const key = `${newStudent.classId}-${newStudent.name}`;
-                        if (!studentsMap.has(key)) {
-                            newStudent.id = `student-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-                            newStudent.status = 'normal';
-                            existingStudents.push(newStudent);
-                            studentsMap.set(key, newStudent);
-                        }
-                    });
-                    
-                    localStorage.setItem('students', JSON.stringify(existingStudents));
-                    return existingStudents;
-                },
-                update(id, data) {
-                    const students = this.getAll();
-                    const index = students.findIndex(student => student.id === id);
-                    if (index !== -1) {
-                        students[index] = { ...students[index], ...data };
-                        localStorage.setItem('students', JSON.stringify(students));
-                        return students[index];
+                    if (error) {
+                        console.error('获取学生列表失败:', error);
+                        return [];
                     }
-                    return null;
+                    return (data || []).map(toCamelCase);
                 },
-                delete(id) {
-                    const students = this.getAll();
-                    const newStudents = students.filter(student => student.id !== id);
-                    localStorage.setItem('students', JSON.stringify(newStudents));
-                    return newStudents;
+                async getById(id) {
+                    const { data, error } = await supabaseClient
+                        .from('students')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    
+                    if (error) {
+                        console.error('获取学生失败:', error);
+                        return null;
+                    }
+                    return toCamelCase(data);
                 },
-                deleteMany(ids) {
-                    const students = this.getAll();
-                    const newStudents = students.filter(student => !ids.includes(student.id));
-                    localStorage.setItem('students', JSON.stringify(newStudents));
-                    return newStudents;
+                async getByClassId(classId) {
+                    const { data, error } = await supabaseClient
+                        .from('students')
+                        .select('*')
+                        .eq('class_id', classId)
+                        .order('created_at', { ascending: true });
+                    
+                    if (error) {
+                        console.error('获取班级学生失败:', error);
+                        return [];
+                    }
+                    return (data || []).map(toCamelCase);
+                },
+                async add(student) {
+                    if (!supabaseClient) {
+                        throw new Error('Supabase客户端未初始化');
+                    }
+                    if (!student.id) {
+                        student.id = `student-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                    }
+                    // 只保留数据库需要的字段
+                    const cleanStudent = {
+                        id: student.id,
+                        classId: student.classId,
+                        name: student.name,
+                        gender: student.gender,
+                        isBoarding: student.isBoarding || false,
+                        dormitory: student.dormitory || null,
+                        status: student.status || 'normal'
+                    };
+                    const dbData = toSnakeCase(cleanStudent);
+                    console.log('添加学生:', dbData);
+                    const { data, error } = await supabaseClient
+                        .from('students')
+                        .insert(dbData)
+                        .select()
+                        .single();
+                    
+                    if (error) {
+                        console.error('添加学生失败:', error);
+                        throw error;
+                    }
+                    console.log('成功添加学生:', data);
+                    return toCamelCase(data);
+                },
+                async addMany(newStudents) {
+                    if (!supabaseClient) {
+                        throw new Error('Supabase客户端未初始化');
+                    }
+                    try {
+                        const existingStudents = await this.getAll();
+                        const studentsMap = new Map(existingStudents.map(student => [`${student.classId}-${student.name}`, student]));
+                        
+                        const studentsToAdd = [];
+                        newStudents.forEach(newStudent => {
+                            const key = `${newStudent.classId}-${newStudent.name}`;
+                            if (!studentsMap.has(key)) {
+                                if (!newStudent.id) {
+                                    newStudent.id = `student-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                                }
+                                if (!newStudent.status) {
+                                    newStudent.status = 'normal';
+                                }
+                                // 只保留数据库需要的字段
+                                const cleanStudent = {
+                                    id: newStudent.id,
+                                    classId: newStudent.classId,
+                                    name: newStudent.name,
+                                    gender: newStudent.gender,
+                                    isBoarding: newStudent.isBoarding || false,
+                                    dormitory: newStudent.dormitory || null,
+                                    status: newStudent.status
+                                };
+                                studentsToAdd.push(toSnakeCase(cleanStudent));
+                            }
+                        });
+                        
+                        if (studentsToAdd.length === 0) {
+                            return existingStudents;
+                        }
+                        
+                        console.log('准备插入学生:', studentsToAdd);
+                        const { data, error } = await supabaseClient
+                            .from('students')
+                            .insert(studentsToAdd)
+                            .select();
+                        
+                        if (error) {
+                            console.error('批量添加学生失败:', error);
+                            alert(`导入失败: ${error.message}`);
+                            return existingStudents;
+                        }
+                        
+                        console.log('成功插入学生:', data);
+                        return [...existingStudents, ...(data || []).map(toCamelCase)];
+                    } catch (error) {
+                        console.error('批量添加学生异常:', error);
+                        alert(`导入失败: ${error.message}`);
+                        return [];
+                    }
+                },
+                async update(id, data) {
+                    const dbData = toSnakeCase(data);
+                    const { data: result, error } = await supabaseClient
+                        .from('students')
+                        .update(dbData)
+                        .eq('id', id)
+                        .select()
+                        .single();
+                    
+                    if (error) {
+                        console.error('更新学生失败:', error);
+                        return null;
+                    }
+                    return toCamelCase(result);
+                },
+                async delete(id) {
+                    const { error } = await supabaseClient
+                        .from('students')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) {
+                        console.error('删除学生失败:', error);
+                        throw error;
+                    }
+                    
+                    return await this.getAll();
+                },
+                async deleteMany(ids) {
+                    const { error } = await supabaseClient
+                        .from('students')
+                        .delete()
+                        .in('id', ids);
+                    
+                    if (error) {
+                        console.error('批量删除学生失败:', error);
+                        throw error;
+                    }
+                    
+                    return await this.getAll();
                 }
             },
 
             // 请假记录数据操作
             leaveRecords: {
-                getAll() {
-                    return JSON.parse(localStorage.getItem('leaveRecords')) || [];
+                async getAll() {
+                    const { data, error } = await supabaseClient
+                        .from('leave_records')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('获取请假记录失败:', error);
+                        return [];
+                    }
+                    return (data || []).map(toCamelCase);
                 },
-                getById(id) {
-                    return this.getAll().find(record => record.id === id);
+                async getById(id) {
+                    const { data, error } = await supabaseClient
+                        .from('leave_records')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    
+                    if (error) {
+                        console.error('获取请假记录失败:', error);
+                        return null;
+                    }
+                    return toCamelCase(data);
                 },
-                getActive() {
-                    const now = new Date();
-                    return this.getAll().filter(record => {
-                        if (record.status !== 'active') return false;
-                        const endTime = new Date(record.endTime);
-                        return endTime > now;
-                    });
+                async getActive() {
+                    const now = new Date().toISOString();
+                    const { data, error } = await supabaseClient
+                        .from('leave_records')
+                        .select('*')
+                        .eq('status', 'active')
+                        .gt('end_time', now)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('获取活跃请假记录失败:', error);
+                        return [];
+                    }
+                    return (data || []).map(toCamelCase);
                 },
-                getToday() {
+                async getToday() {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const tomorrow = new Date(today);
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     
-                    return this.getAll().filter(record => {
-                        const startTime = new Date(record.startTime);
-                        return startTime >= today && startTime < tomorrow;
-                    });
+                    const { data, error } = await supabaseClient
+                        .from('leave_records')
+                        .select('*')
+                        .gte('start_time', today.toISOString())
+                        .lt('start_time', tomorrow.toISOString())
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('获取今日请假记录失败:', error);
+                        return [];
+                    }
+                    return (data || []).map(toCamelCase);
                 },
-                getYesterday() {
+                async getYesterday() {
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
                     yesterday.setHours(0, 0, 0, 0);
-                    
                     const today = new Date(yesterday);
                     today.setDate(today.getDate() + 1);
                     
-                    return this.getAll().filter(record => {
-                        const startTime = new Date(record.startTime);
-                        return startTime >= yesterday && startTime < today;
-                    });
+                    const { data, error } = await supabaseClient
+                        .from('leave_records')
+                        .select('*')
+                        .gte('start_time', yesterday.toISOString())
+                        .lt('start_time', today.toISOString())
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('获取昨日请假记录失败:', error);
+                        return [];
+                    }
+                    return (data || []).map(toCamelCase);
                 },
-                add(record) {
-                    const records = this.getAll();
-                    records.push(record);
-                    localStorage.setItem('leaveRecords', JSON.stringify(records));
+                async add(record) {
+                    if (!record.id) {
+                        record.id = `leave-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                    }
+                    const dbData = toSnakeCase({
+                        ...record,
+                        classId: record.classId,
+                        studentId: record.studentId
+                    });
+                    const { data, error } = await supabaseClient
+                        .from('leave_records')
+                        .insert(dbData)
+                        .select()
+                        .single();
+                    
+                    if (error) {
+                        console.error('添加请假记录失败:', error);
+                        throw error;
+                    }
+                    
+                    const result = toCamelCase(data);
                     
                     // 更新学生状态
+                    if (result.status === 'active') {
+                        await DataStore.students.update(result.studentId, { status: 'leave' });
+                    }
+                    
+                    return result;
+                },
+                async update(id, data) {
+                    const oldRecord = await this.getById(id);
+                    if (!oldRecord) return null;
+                    
+                    const dbData = toSnakeCase(data);
+                    const { data: result, error } = await supabaseClient
+                        .from('leave_records')
+                        .update(dbData)
+                        .eq('id', id)
+                        .select()
+                        .single();
+                    
+                    if (error) {
+                        console.error('更新请假记录失败:', error);
+                        return null;
+                    }
+                    
+                    const updated = toCamelCase(result);
+                    
+                    // 更新学生状态
+                    if (data.status === 'cancelled' && oldRecord.status === 'active') {
+                        await DataStore.students.update(oldRecord.studentId, { status: 'normal' });
+                    } else if (data.status === 'active' && oldRecord.status !== 'active') {
+                        await DataStore.students.update(oldRecord.studentId, { status: 'leave' });
+                    }
+                    
+                    return updated;
+                },
+                async delete(id) {
+                    const record = await this.getById(id);
+                    if (!record) return null;
+                    
+                    const { error } = await supabaseClient
+                        .from('leave_records')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) {
+                        console.error('删除请假记录失败:', error);
+                        throw error;
+                    }
+                    
+                    // 如果是活跃的请假记录，恢复学生状态
                     if (record.status === 'active') {
-                        DataStore.students.update(record.studentId, { status: 'leave' });
+                        await DataStore.students.update(record.studentId, { status: 'normal' });
                     }
                     
-                    return record;
+                    return await this.getAll();
                 },
-                update(id, data) {
-                    const records = this.getAll();
-                    const index = records.findIndex(record => record.id === id);
-                    if (index !== -1) {
-                        const oldRecord = records[index];
-                        records[index] = { ...oldRecord, ...data };
-                        localStorage.setItem('leaveRecords', JSON.stringify(records));
-                        
-                        // 更新学生状态
-                        if (data.status === 'cancelled' && oldRecord.status === 'active') {
-                            DataStore.students.update(oldRecord.studentId, { status: 'normal' });
-                        } else if (data.status === 'active' && oldRecord.status !== 'active') {
-                            DataStore.students.update(oldRecord.studentId, { status: 'leave' });
-                        }
-                        
-                        return records[index];
-                    }
-                    return null;
-                },
-                delete(id) {
-                    const records = this.getAll();
-                    const index = records.findIndex(record => record.id === id);
-                    if (index !== -1) {
-                        const record = records[index];
-                        const newRecords = records.filter(r => r.id !== id);
-                        localStorage.setItem('leaveRecords', JSON.stringify(newRecords));
-                        
-                        // 如果是活跃的请假记录，恢复学生状态
-                        if (record.status === 'active') {
-                            DataStore.students.update(record.studentId, { status: 'normal' });
-                        }
-                        
-                        return newRecords;
-                    }
-                    return null;
-                },
-                cleanupExpired() {
-                    const now = new Date();
-                    const records = this.getAll();
-                    const activeStudentIds = new Set();
-                    
-                    // 找出所有活跃的请假记录中的学生ID
-                    records.forEach(record => {
-                        if (record.status === 'active') {
-                            const endTime = new Date(record.endTime);
-                            if (endTime > now) {
-                                activeStudentIds.add(record.studentId);
-                            }
-                        }
-                    });
+                async cleanupExpired() {
+                    const now = new Date().toISOString();
                     
                     // 更新过期的请假记录
-                    const updatedRecords = records.map(record => {
-                        if (record.status === 'active') {
-                            const endTime = new Date(record.endTime);
-                            if (endTime <= now) {
-                                return { ...record, status: 'expired' };
-                            }
-                        }
-                        return record;
-                    });
+                    const { error: updateError } = await supabaseClient
+                        .from('leave_records')
+                        .update({ status: 'expired' })
+                        .eq('status', 'active')
+                        .lte('end_time', now);
                     
-                    localStorage.setItem('leaveRecords', JSON.stringify(updatedRecords));
+                    if (updateError) {
+                        console.error('清理过期请假记录失败:', updateError);
+                    }
+                    
+                    // 获取所有活跃的请假记录
+                    const activeRecords = await this.getActive();
+                    const activeStudentIds = new Set(activeRecords.map(r => r.studentId));
+                    
+                    // 获取所有状态为请假的学生
+                    const allStudents = await DataStore.students.getAll();
+                    const leaveStudents = allStudents.filter(s => s.status === 'leave');
                     
                     // 更新学生状态
-                    const students = DataStore.students.getAll();
-                    const updatedStudents = students.map(student => {
-                        if (student.status === 'leave' && !activeStudentIds.has(student.id)) {
-                            return { ...student, status: 'normal' };
+                    for (const student of leaveStudents) {
+                        if (!activeStudentIds.has(student.id)) {
+                            await DataStore.students.update(student.id, { status: 'normal' });
                         }
-                        return student;
-                    });
+                    }
                     
-                    localStorage.setItem('students', JSON.stringify(updatedStudents));
-                    
-                    return updatedRecords;
+                    return await this.getAll();
                 }
             }
         };
@@ -1524,8 +1854,8 @@
             },
             
             // 统计每天的请假数量
-            countLeavesByDay(days) {
-                const records = DataStore.leaveRecords.getAll();
+            async countLeavesByDay(days) {
+                const records = await DataStore.leaveRecords.getAll();
                 const counts = {};
                 
                 // 初始化每天的计数为0
@@ -1545,8 +1875,8 @@
             },
             
             // 统计请假类型分布
-            countLeaveTypes() {
-                const records = DataStore.leaveRecords.getActive();
+            async countLeaveTypes() {
+                const records = await DataStore.leaveRecords.getActive();
                 const types = {
                     '病假': 0,
                     '事假': 0,
@@ -1577,7 +1907,7 @@
         // UI渲染模块
         const UIRenderer = {
             // 初始化UI
-            init() {
+            async init() {
                 // 初始化导航
                 this.initNavigation();
                 
@@ -1591,11 +1921,11 @@
                 this.initForms();
                 
                 // 初始化数据
-                this.loadDashboardData();
-                this.loadClassList();
-                this.loadStudentList();
-                this.loadLeaveRecords();
-                this.loadRealtimeData();
+                await this.loadDashboardData();
+                await this.loadClassList();
+                await this.loadStudentList();
+                await this.loadLeaveRecords();
+                await this.loadRealtimeData();
                 this.loadExportForms();
                 
                 // 设置定时刷新
@@ -1670,7 +2000,7 @@
                     const file = e.target.files[0];
                     if (!file) return;
                     
-                    this.importClasses(file);
+                    UIRenderer.importClasses(file);
                     e.target.value = ''; // 重置文件输入
                 });
                 
@@ -1683,7 +2013,7 @@
                     const file = e.target.files[0];
                     if (!file) return;
                     
-                    this.importStudents(file);
+                    UIRenderer.importStudents(file);
                     e.target.value = ''; // 重置文件输入
                 });
                 
@@ -1708,25 +2038,25 @@
                 });
                 
                 // 请假记录筛选
-                document.getElementById('record-class-filter').addEventListener('change', () => {
-                    this.loadLeaveRecords();
+                document.getElementById('record-class-filter').addEventListener('change', async () => {
+                    await this.loadLeaveRecords();
                 });
                 
-                document.getElementById('record-status-filter').addEventListener('change', () => {
-                    this.loadLeaveRecords();
+                document.getElementById('record-status-filter').addEventListener('change', async () => {
+                    await this.loadLeaveRecords();
                 });
                 
-                document.getElementById('record-search').addEventListener('input', () => {
-                    this.loadLeaveRecords();
+                document.getElementById('record-search').addEventListener('input', async () => {
+                    await this.loadLeaveRecords();
                 });
                 
                 // 学生列表筛选
-                document.getElementById('student-class-filter').addEventListener('change', () => {
-                    this.loadStudentList();
+                document.getElementById('student-class-filter').addEventListener('change', async () => {
+                    await this.loadStudentList();
                 });
                 
-                document.getElementById('student-search').addEventListener('input', () => {
-                    this.loadStudentList();
+                document.getElementById('student-search').addEventListener('input', async () => {
+                    await this.loadStudentList();
                 });
                 
                 // 全选班级
@@ -1762,43 +2092,43 @@
                 });
                 
                 // 删除选中班级
-                document.getElementById('delete-selected-classes').addEventListener('click', () => {
+                document.getElementById('delete-selected-classes').addEventListener('click', async () => {
                     if (confirm('确定要删除选中的班级吗？此操作也会删除这些班级的学生数据。')) {
                         const selectedIds = Array.from(document.querySelectorAll('#class-list input[type="checkbox"]:checked'))
                             .map(checkbox => checkbox.value);
                         
                         if (selectedIds.length > 0) {
-                            DataStore.classes.deleteMany(selectedIds);
-                            this.loadClassList();
-                            this.loadStudentList();
-                            this.loadDashboardData();
+                            await DataStore.classes.deleteMany(selectedIds);
+                            await this.loadClassList();
+                            await this.loadStudentList();
+                            await this.loadDashboardData();
                         }
                     }
                 });
                 
                 // 删除选中学生
-                document.getElementById('delete-selected-students').addEventListener('click', () => {
+                document.getElementById('delete-selected-students').addEventListener('click', async () => {
                     if (confirm('确定要删除选中的学生吗？')) {
                         const selectedIds = Array.from(document.querySelectorAll('#student-list input[type="checkbox"]:checked'))
                             .map(checkbox => checkbox.value);
                         
                         if (selectedIds.length > 0) {
-                            DataStore.students.deleteMany(selectedIds);
-                            this.loadStudentList();
-                            this.loadDashboardData();
+                            await DataStore.students.deleteMany(selectedIds);
+                            await this.loadStudentList();
+                            await this.loadDashboardData();
                         }
                     }
                 });
                 
                 // 请假记录分页
-                document.getElementById('prev-page').addEventListener('click', () => {
+                document.getElementById('prev-page').addEventListener('click', async () => {
                     this.currentPage = Math.max(1, this.currentPage - 1);
-                    this.loadLeaveRecords();
+                    await this.loadLeaveRecords();
                 });
                 
-                document.getElementById('next-page').addEventListener('click', () => {
+                document.getElementById('next-page').addEventListener('click', async () => {
                     this.currentPage = this.currentPage + 1;
-                    this.loadLeaveRecords();
+                    await this.loadLeaveRecords();
                 });
                 
                 // 数据导出表单
@@ -1827,6 +2157,166 @@
                         this.updateLeaveTrendChart(days);
                     });
                 });
+            },
+            
+            // 导入班级函数
+            importClasses: async function(file) {
+                console.log("🧪 测试：importClasses函数被调用了！");
+                console.log("开始导入班级文件:", file.name);
+                
+                try {
+                    const data = await Utils.parseCSV(file);
+                    
+                    if (data.length === 0) {
+                        alert('CSV文件中没有数据');
+                        return;
+                    }
+
+                    console.log('解析到的CSV数据:', data);
+                    
+                    // 处理导入数据
+                    const newClasses = [];
+                    const invalidRows = [];
+                    
+                    data.forEach((row, index) => {
+                        console.log(`处理第 ${index + 1} 行:`, row);
+                        
+                        // 尝试不同的列名来获取班级名称
+                        const className = row['班级名称'] || row['班级'] || row['name'] || row['className'] || row['class_name'];
+                        
+                        if (!className) {
+                            invalidRows.push(`第 ${index + 1} 行：没有找到班级名称（支持的列名：班级名称、班级、name、className、class_name）`);
+                            return;
+                        }
+                        
+                        const trimmedName = className.toString().trim();
+                        if (!trimmedName) {
+                            invalidRows.push(`第 ${index + 1} 行：班级名称为空`);
+                            return;
+                        }
+                        
+                        newClasses.push({
+                            id: 'class-' + Date.now() + '-' + index + '-' + Math.random().toString(36).substr(2, 5),
+                            name: trimmedName
+                        });
+                    });
+
+                    // 显示无效行信息
+                    if (invalidRows.length > 0) {
+                        alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.slice(0, 5).join('\n')}${invalidRows.length > 5 ? '\n...（只显示前5条）' : ''}`);
+                    }
+
+                    if (newClasses.length === 0) {
+                        alert('没有有效的班级数据可以导入');
+                        return;
+                    }
+
+                    console.log('准备导入的班级数据:', newClasses);
+                    
+                    // 导入班级
+                    const result = await DataStore.classes.addMany(newClasses);
+                    
+                    // 更新界面
+                    await this.loadClassList();
+                    await this.loadDashboardData();
+                    
+                    alert(`成功导入 ${newClasses.length} 个班级`);
+                    
+                } catch (error) {
+                    console.error('导入班级失败:', error);
+                    alert(`导入失败: ${error.message}\n\n请检查CSV文件格式是否正确。`);
+                }
+            },
+
+            // 导入学生函数
+            importStudents: async function(file) {
+                console.log("🧪 测试：importStudents函数被调用了！");
+                console.log("开始导入学生文件:", file.name);
+                
+                try {
+                    const data = await Utils.parseCSV(file);
+                    
+                    if (data.length === 0) {
+                        alert('CSV文件中没有数据');
+                        return;
+                    }
+
+                    console.log('解析到的学生CSV数据:', data);
+                    
+                    // 获取所有班级
+                    const classes = await DataStore.classes.getAll();
+                    const classMap = new Map(classes.map(cls => [cls.name, cls]));
+                    
+                    // 处理导入数据
+                    const newStudents = [];
+                    const invalidRows = [];
+                    
+                    data.forEach((row, index) => {
+                        console.log(`处理学生数据第 ${index + 1} 行:`, row);
+                        
+                        // 尝试不同的列名
+                        const className = row['班级'] || row['class'] || row['className'] || row['class_name'];
+                        const studentName = row['姓名'] || row['学生姓名'] || row['name'] || row['studentName'];
+                        const gender = row['性别'] || row['gender'];
+                        const isBoardingStr = (row['是否住宿生'] || row['住宿'] || row['is_boarding'] || row['isBoarding'] || '否').toString().toLowerCase();
+                        const dormitory = row['宿舍号'] || row['宿舍'] || row['dormitory'] || '';
+                        
+                        // 验证必要字段
+                        if (!className || !studentName || !gender) {
+                            invalidRows.push(`第 ${index + 1} 行：缺少必要的字段（需要班级、姓名、性别）`);
+                            return;
+                        }
+                        
+                        // 验证班级是否存在
+                        const cls = classMap.get(className.toString().trim());
+                        if (!cls) {
+                            invalidRows.push(`第 ${index + 1} 行：班级"${className}"不存在，请先导入该班级`);
+                            return;
+                        }
+                        
+                        // 验证性别
+                        const normalizedGender = gender.toString().trim();
+                        if (!['男', '女'].includes(normalizedGender)) {
+                            invalidRows.push(`第 ${index + 1} 行：性别必须是"男"或"女"，当前为"${gender}"`);
+                            return;
+                        }
+                        
+                        // 处理是否住宿生
+                        const isBoarding = ['是', '住宿', '住宿生', 'true', '1', 'yes'].includes(isBoardingStr);
+                        
+                        // 添加到新学生列表
+                        newStudents.push({
+                            id: 'student-' + Date.now() + '-' + index + '-' + Math.random().toString(36).substr(2, 5),
+                            classId: cls.id,
+                            name: studentName.toString().trim(),
+                            gender: normalizedGender,
+                            isBoarding: isBoarding,
+                            dormitory: isBoarding ? dormitory.toString().trim() : '',
+                            status: 'normal'
+                        });
+                    });
+                        
+                    // 显示无效行信息
+                    if (invalidRows.length > 0) {
+                        alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.slice(0, 5).join('\n')}${invalidRows.length > 5 ? '\n...（只显示前5条）' : ''}`);
+                    }
+                    
+                    // 导入学生
+                    if (newStudents.length > 0) {
+                        const result = await DataStore.students.addMany(newStudents);
+                        
+                        // 更新界面
+                        await this.loadStudentList();
+                        await this.loadDashboardData();
+                        
+                        alert(`成功导入 ${newStudents.length} 个学生`);
+                    } else {
+                        alert('没有有效的学生数据可以导入');
+                    }
+                } catch (error) {
+                    console.error('导入学生失败:', error);
+                    alert(`导入失败: ${error.message}\n\n请检查CSV文件格式是否正确。`);
+                }
             },
             
             // 显示指定页面
@@ -1887,16 +2377,16 @@
             },
             
             // 加载仪表盘数据
-            loadDashboardData() {
+            async loadDashboardData() {
                 // 清理过期的请假记录
-                DataStore.leaveRecords.cleanupExpired();
+                await DataStore.leaveRecords.cleanupExpired();
                 
                 // 获取数据
-                const classes = DataStore.classes.getAll();
-                const students = DataStore.students.getAll();
-                const todayLeaves = DataStore.leaveRecords.getToday();
-                const yesterdayLeaves = DataStore.leaveRecords.getYesterday();
-                const activeLeaves = DataStore.leaveRecords.getActive();
+                const classes = await DataStore.classes.getAll();
+                const students = await DataStore.students.getAll();
+                const todayLeaves = await DataStore.leaveRecords.getToday();
+                const yesterdayLeaves = await DataStore.leaveRecords.getYesterday();
+                const activeLeaves = await DataStore.leaveRecords.getActive();
                 const alertCount = activeLeaves.filter(record => record.isAlert).length;
                 
                 // 更新数据卡片
@@ -2109,8 +2599,8 @@
             },
             
             // 加载班级列表
-            loadClassList() {
-                const classes = DataStore.classes.getAll();
+            async loadClassList() {
+                const classes = await DataStore.classes.getAll();
                 const container = document.getElementById('class-list');
                 
                 if (classes.length === 0) {
@@ -2123,8 +2613,9 @@
                 }
                 
                 let html = '';
-                classes.forEach(cls => {
-                    const studentCount = DataStore.students.getByClassId(cls.id).length;
+                for (const cls of classes) {
+                    const studentsByClass = await DataStore.students.getByClassId(cls.id);
+                    const studentCount = studentsByClass.length;
                     
                     html += `
                         <tr>
@@ -2146,28 +2637,28 @@
                 
                 // 添加删除班级事件
                 document.querySelectorAll('.delete-class').forEach(button => {
-                    button.addEventListener('click', (e) => {
+                    button.addEventListener('click', async (e) => {
                         e.preventDefault();
                         
                         const classId = button.getAttribute('data-id');
-                        const cls = DataStore.classes.getById(classId);
+                        const cls = await DataStore.classes.getById(classId);
                         
                         if (cls && confirm(`确定要删除班级"${cls.name}"吗？此操作也会删除该班级的学生数据。`)) {
-                            DataStore.classes.delete(classId);
-                            this.loadClassList();
-                            this.loadStudentList();
-                            this.loadDashboardData();
+                            await DataStore.classes.delete(classId);
+                            await this.loadClassList();
+                            await this.loadStudentList();
+                            await this.loadDashboardData();
                         }
                     });
                 });
                 
                 // 更新班级选择下拉框
-                this.updateClassOptions();
+                await this.updateClassOptions();
             },
             
             // 更新班级选择下拉框
-            updateClassOptions() {
-                const classes = DataStore.classes.getAll();
+            async updateClassOptions() {
+                const classes = await DataStore.classes.getAll();
                 const selectElements = [
                     document.getElementById('leave-class'),
                     document.getElementById('student-class-filter'),
@@ -2202,9 +2693,9 @@
             },
             
             // 加载学生列表
-            loadStudentList() {
-                const classes = DataStore.classes.getAll();
-                const students = DataStore.students.getAll();
+            async loadStudentList() {
+                const classes = await DataStore.classes.getAll();
+                const students = await DataStore.students.getAll();
                 const container = document.getElementById('student-list');
                 
                 // 应用筛选
@@ -2330,12 +2821,12 @@
             },
             
             // 加载请假登记表单
-            loadLeaveRequestForm() {
+            async loadLeaveRequestForm() {
                 // 初始化时分下拉菜单
                 this.initTimeSelects();
                 
                 // 更新班级选项
-                this.updateClassOptions();
+                await this.updateClassOptions();
                 
                 // 设置默认时间
                 const now = new Date();
@@ -2356,14 +2847,14 @@
                 this.setDateTime('leave-end-date', 'leave-end-hour', 'leave-end-minute', endTime.toISOString());
                 
                 // 更新学生选项
-                this.updateStudentOptions();
+                await this.updateStudentOptions();
                 
                 // 更新请假选项
                 this.updateLeaveOptions();
             },
             
             // 更新学生选项
-            updateStudentOptions() {
+            async updateStudentOptions() {
                 const classId = document.getElementById('leave-class').value;
                 const studentSelect = document.getElementById('leave-student');
                 
@@ -2378,7 +2869,7 @@
                     return;
                 }
                 
-                const students = DataStore.students.getByClassId(classId);
+                const students = await DataStore.students.getByClassId(classId);
                 
                 if (students.length === 0) {
                     const option = document.createElement('option');
@@ -2443,7 +2934,7 @@
             },
             
             // 提交请假请求
-            submitLeaveRequest() {
+            async submitLeaveRequest() {
                 const classId = document.getElementById('leave-class').value;
                 const studentId = document.getElementById('leave-student').value;
                 const startTime = this.combineDateTime('leave-start-date', 'leave-start-hour', 'leave-start-minute');
@@ -2483,7 +2974,7 @@
                 };
                 
                 // 保存请假记录
-                DataStore.leaveRecords.add(leaveRecord);
+                await DataStore.leaveRecords.add(leaveRecord);
                 
                 // 显示成功消息
                 alert('请假登记成功');
@@ -2492,19 +2983,19 @@
                 document.getElementById('leave-request-form').reset();
                 
                 // 更新相关页面
-                this.loadDashboardData();
-                this.loadLeaveRecords();
-                this.loadRealtimeData();
-                this.loadStudentList();
+                await this.loadDashboardData();
+                await this.loadLeaveRecords();
+                await this.loadRealtimeData();
+                await this.loadStudentList();
             },
             
             // 加载请假记录
-            loadLeaveRecords() {
+            async loadLeaveRecords() {
                 // 清理过期的请假记录
-                DataStore.leaveRecords.cleanupExpired();
+                await DataStore.leaveRecords.cleanupExpired();
                 
                 // 获取所有请假记录
-                let records = DataStore.leaveRecords.getAll();
+                let records = await DataStore.leaveRecords.getAll();
                 
                 // 应用筛选
                 const classFilter = document.getElementById('record-class-filter').value;
@@ -2546,11 +3037,11 @@
                 }
                 
                 let html = '';
-                paginatedRecords.forEach(record => {
-                    const student = DataStore.students.getById(record.studentId);
-                    const cls = DataStore.classes.getById(record.classId);
+                for (const record of paginatedRecords) {
+                    const student = await DataStore.students.getById(record.studentId);
+                    const cls = await DataStore.classes.getById(record.classId);
                     
-                    if (!student || !cls) return;
+                    if (!student || !cls) continue;
                     
                     const statusClass = record.isAlert ? 'badge-danger' : Utils.getLeaveStatusClass(record.status);
                     const statusText = record.isAlert ? '警报' : Utils.getLeaveStatusText(record.status);
@@ -2593,21 +3084,21 @@
             },
             
             // 取消请假
-            cancelLeave(recordId) {
+            async cancelLeave(recordId) {
                 if (confirm('确定要撤回这条请假记录吗？')) {
-                    DataStore.leaveRecords.update(recordId, { status: 'cancelled' });
+                    await DataStore.leaveRecords.update(recordId, { status: 'cancelled' });
                     
                     // 更新相关页面
-                    this.loadDashboardData();
-                    this.loadLeaveRecords();
-                    this.loadRealtimeData();
-                    this.loadStudentList();
+                    await this.loadDashboardData();
+                    await this.loadLeaveRecords();
+                    await this.loadRealtimeData();
+                    await this.loadStudentList();
                 }
             },
             
             // 切换警报状态
-            toggleAlert(recordId) {
-                const record = DataStore.leaveRecords.getById(recordId);
+            async toggleAlert(recordId) {
+                const record = await DataStore.leaveRecords.getById(recordId);
                 
                 if (record) {
                     const newAlertStatus = !record.isAlert;
@@ -2616,22 +3107,22 @@
                         return;
                     }
                     
-                    DataStore.leaveRecords.update(recordId, { isAlert: newAlertStatus });
+                    await DataStore.leaveRecords.update(recordId, { isAlert: newAlertStatus });
                     
                     // 更新相关页面
-                    this.loadDashboardData();
-                    this.loadLeaveRecords();
-                    this.loadRealtimeData();
+                    await this.loadDashboardData();
+                    await this.loadLeaveRecords();
+                    await this.loadRealtimeData();
                 }
             },
             
             // 加载实时数据面板
-            loadRealtimeData() {
+            async loadRealtimeData() {
                 // 清理过期的请假记录
-                DataStore.leaveRecords.cleanupExpired();
+                await DataStore.leaveRecords.cleanupExpired();
                 
                 // 获取活跃的请假记录
-                const activeRecords = DataStore.leaveRecords.getActive();
+                const activeRecords = await DataStore.leaveRecords.getActive();
                 
                 // 更新数据概览卡片
                 document.getElementById('security-count').textContent = activeRecords.length;
@@ -2641,24 +3132,27 @@
                 document.getElementById('meal-count').textContent = mealRecords.length;
                 
                 // 筛选住宿生的请假记录
-                const dormRecords = activeRecords.filter(record => {
-                    const student = DataStore.students.getById(record.studentId);
-                    return student && student.isBoarding && record.dormOption !== 'none';
-                });
+                const dormRecords = [];
+                for (const record of activeRecords) {
+                    const student = await DataStore.students.getById(record.studentId);
+                    if (student && student.isBoarding && record.dormOption !== 'none') {
+                        dormRecords.push(record);
+                    }
+                }
                 document.getElementById('dorm-count').textContent = dormRecords.length;
                 
                 // 更新安保部分
-                this.updateSecurityPanel(activeRecords);
+                await this.updateSecurityPanel(activeRecords);
                 
                 // 更新停餐部分
-                this.updateMealPanel(activeRecords);
+                await this.updateMealPanel(activeRecords);
                 
                 // 更新宿舍部分
-                this.updateDormPanel(activeRecords);
+                await this.updateDormPanel(activeRecords);
             },
             
             // 更新安保部分
-            updateSecurityPanel(records) {
+            async updateSecurityPanel(records) {
                 const container = document.getElementById('security-records');
                 
                 if (records.length === 0) {
@@ -2671,11 +3165,11 @@
                 }
                 
                 let html = '';
-                records.forEach(record => {
-                    const student = DataStore.students.getById(record.studentId);
-                    const cls = DataStore.classes.getById(record.classId);
+                for (const record of records) {
+                    const student = await DataStore.students.getById(record.studentId);
+                    const cls = await DataStore.classes.getById(record.classId);
                     
-                    if (!student || !cls) return;
+                    if (!student || !cls) continue;
                     
                     html += `
                         <tr ${record.isAlert ? 'class="alert"' : ''}>
@@ -2686,13 +3180,13 @@
                             <td>${record.reason}</td>
                         </tr>
                     `;
-                });
+                }
                 
                 container.innerHTML = html;
             },
             
             // 更新停餐部分
-            updateMealPanel(records) {
+            async updateMealPanel(records) {
                 const container = document.getElementById('meal-records');
                 
                 // 筛选需要停餐的记录
@@ -2752,11 +3246,11 @@
                 }
                 
                 let html = '';
-                dormRecords.forEach(record => {
-                    const student = DataStore.students.getById(record.studentId);
-                    const cls = DataStore.classes.getById(record.classId);
+                for (const record of dormRecords) {
+                    const student = await DataStore.students.getById(record.studentId);
+                    const cls = await DataStore.classes.getById(record.classId);
                     
-                    if (!student || !cls) return;
+                    if (!student || !cls) continue;
                     
                     html += `
                         <tr ${record.isAlert ? 'class="alert"' : ''}>
@@ -2772,9 +3266,9 @@
             },
             
             // 加载导出表单
-            loadExportForms() {
+            async loadExportForms() {
                 // 更新班级选项
-                this.updateClassOptions();
+                await this.updateClassOptions();
                 
                 // 设置默认日期为今天
                 const today = Utils.getCurrentDate();
@@ -2956,143 +3450,6 @@
                 Utils.downloadExcel(exportData, filename, ['班级', '学生', '宿舍号', '请假情况', '请假时间', '状态']);
             },
             
-            // 导入班级
-            importClasses(file) {
-                Utils.parseCSV(file)
-                    .then(data => {
-                        if (data.length === 0) {
-                            alert('CSV文件中没有数据');
-                            return;
-                        }
-                        
-                        // 检查是否包含班级名称列
-                        const firstRow = data[0];
-                        if (!firstRow['班级名称'] && !firstRow['班级']) {
-                            alert('CSV文件格式不正确，请确保包含"班级名称"列');
-                            return;
-                        }
-                        
-                        // 处理导入数据
-                        const newClasses = data.map(row => {
-                            const className = row['班级名称'] || row['班级'];
-                            if (!className) return null;
-                            
-                            return {
-                                name: className.trim(),
-                                studentCount: 0
-                            };
-                        }).filter(cls => cls !== null);
-                        
-                        if (newClasses.length === 0) {
-                            alert('没有有效的班级数据');
-                            return;
-                        }
-                        
-                        // 导入班级
-                        DataStore.classes.addMany(newClasses);
-                        
-                        // 更新界面
-                        this.loadClassList();
-                        this.loadDashboardData();
-                        
-                        alert(`成功导入 ${newClasses.length} 个班级`);
-                    })
-                    .catch(error => {
-                        alert(`导入失败: ${error.message}`);
-                        console.error('导入班级失败', error);
-                    });
-            },
-            
-            // 导入学生
-            importStudents(file) {
-                Utils.parseCSV(file)
-                    .then(data => {
-                        if (data.length === 0) {
-                            alert('CSV文件中没有数据');
-                            return;
-                        }
-                        
-                        // 检查是否包含必要的列
-                        const firstRow = data[0];
-                        const requiredColumns = ['班级', '姓名', '性别', '是否住宿生'];
-                        
-                        const missingColumns = requiredColumns.filter(column => !firstRow[column]);
-                        if (missingColumns.length > 0) {
-                            alert(`CSV文件格式不正确，缺少必要的列: ${missingColumns.join(', ')}`);
-                            return;
-                        }
-                        
-                        // 获取所有班级
-                        const classes = DataStore.classes.getAll();
-                        const classMap = new Map(classes.map(cls => [cls.name, cls]));
-                        
-                        // 处理导入数据
-                        const newStudents = [];
-                        const invalidRows = [];
-                        
-                        data.forEach((row, index) => {
-                            const className = row['班级'].trim();
-                            const name = row['姓名'].trim();
-                            const gender = row['性别'].trim();
-                            const isBoardingStr = row['是否住宿生'].trim().toLowerCase();
-                            const dormitory = row['宿舍号'] ? row['宿舍号'].trim() : '';
-                            
-                            // 验证必要字段
-                            if (!className || !name || !gender || !isBoardingStr) {
-                                invalidRows.push(`第 ${index + 1} 行：缺少必要的字段`);
-                                return;
-                            }
-                            
-                            // 验证班级是否存在
-                            const cls = classMap.get(className);
-                            if (!cls) {
-                                invalidRows.push(`第 ${index + 1} 行：班级"${className}"不存在`);
-                                return;
-                            }
-                            
-                            // 验证性别
-                            if (!['男', '女'].includes(gender)) {
-                                invalidRows.push(`第 ${index + 1} 行：性别必须是"男"或"女"`);
-                                return;
-                            }
-                            
-                            // 处理是否住宿生
-                            const isBoarding = ['是', '住宿', '住宿生', 'true', '1'].includes(isBoardingStr);
-                            
-                            // 添加到新学生列表
-                            newStudents.push({
-                                classId: cls.id,
-                                name,
-                                gender,
-                                isBoarding,
-                                dormitory: isBoarding ? dormitory : ''
-                            });
-                        });
-                        
-                        // 显示无效行信息
-                        if (invalidRows.length > 0) {
-                            alert(`导入过程中发现 ${invalidRows.length} 行无效数据：\n\n${invalidRows.join('\n')}`);
-                        }
-                        
-                        // 导入学生
-                        if (newStudents.length > 0) {
-                            DataStore.students.addMany(newStudents);
-                            
-                            // 更新界面
-                            this.loadStudentList();
-                            this.loadDashboardData();
-                            
-                            alert(`成功导入 ${newStudents.length} 个学生`);
-                        } else {
-                            alert('没有有效的学生数据');
-                        }
-                    })
-                    .catch(error => {
-                        alert(`导入失败: ${error.message}`);
-                        console.error('导入学生失败', error);
-                    });
-            },
-            
             // 更新删除按钮状态
             updateDeleteButtons() {
                 // 班级删除按钮
@@ -3107,10 +3464,10 @@
             // 设置定时刷新
             setupAutoRefresh() {
                 // 每30秒自动刷新一次数据
-                setInterval(() => {
-                    this.loadDashboardData();
-                    this.loadLeaveRecords();
-                    this.loadRealtimeData();
+                setInterval(async () => {
+                    await this.loadDashboardData();
+                    await this.loadLeaveRecords();
+                    await this.loadRealtimeData();
                 }, 30000);
             },
             
@@ -3209,6 +3566,101 @@
             }
         };
 
+        // 测试函数
+        async function testDatabaseConnection() {
+            console.log("开始测试数据库连接...");
+            
+            try {
+                // 测试1: 检查Supabase客户端
+                if (!supabaseClient) {
+                    alert("❌ Supabase客户端未初始化");
+                    return;
+                }
+                console.log("✅ Supabase客户端正常");
+
+                // 测试2: 尝试插入测试班级
+                const testClass = {
+                    id: 'test-class-' + Date.now(),
+                    name: '测试班级-' + Date.now()
+                };
+                
+                console.log("准备插入测试班级:", testClass);
+                const { data: classData, error: classError } = await supabaseClient
+                    .from('classes')
+                    .insert([testClass])
+                    .select();
+                    
+                if (classError) {
+                    console.error("❌ 插入班级失败:", classError);
+                    alert("插入班级失败: " + classError.message);
+                    return;
+                }
+                console.log("✅ 插入班级成功:", classData);
+
+                // 测试3: 查询班级数据
+                const { data: classes, error: queryError } = await supabaseClient
+                    .from('classes')
+                    .select('*');
+                    
+                if (queryError) {
+                    console.error("❌ 查询班级失败:", queryError);
+                    alert("查询班级失败: " + queryError.message);
+                    return;
+                }
+                console.log("✅ 查询班级成功:", classes);
+
+                // 测试4: 删除测试班级
+                const { error: deleteError } = await supabaseClient
+                    .from('classes')
+                    .delete()
+                    .eq('id', testClass.id);
+                    
+                if (deleteError) {
+                    console.error("❌ 删除测试班级失败:", deleteError);
+                    alert("删除测试班级失败: " + deleteError.message);
+                    return;
+                }
+                console.log("✅ 删除测试班级成功");
+
+                alert("🎉 数据库连接测试成功！\n所有操作都正常工作。");
+                
+            } catch (error) {
+                console.error("💥 测试过程中出现异常:", error);
+                alert("测试失败: " + error.toString());
+            }
+        }
+
+        function testImportFunctions() {
+            console.log("=== 开始测试导入函数 ===");
+            
+            // 测试 UIRenderer 对象
+            if (typeof UIRenderer === 'undefined') {
+                console.error("❌ UIRenderer 对象不存在");
+                alert("❌ UIRenderer 对象不存在");
+                return;
+            }
+            console.log("✅ UIRenderer 对象存在");
+            
+            // 测试 importClasses 函数
+            if (typeof UIRenderer.importClasses === 'undefined') {
+                console.error("❌ importClasses 函数不存在");
+                alert("❌ importClasses 函数不存在");
+                return;
+            }
+            console.log("✅ importClasses 函数存在");
+            
+            // 测试 importStudents 函数
+            if (typeof UIRenderer.importStudents === 'undefined') {
+                console.error("❌ importStudents 函数不存在");
+                alert("❌ importStudents 函数不存在");
+                return;
+            }
+            console.log("✅ importStudents 函数存在");
+            
+            console.log("=== 所有导入函数测试通过 ===");
+            alert("🎉 所有导入函数都存在！现在可以测试文件导入了。");
+        }
+
         // 初始化应用
         document.addEventListener('DOMContentLoaded', () => {
             // 初始化数据存储
@@ -3220,6 +3672,8 @@
 
         // 暴露UIRenderer方法到全局，以便在HTML中调用
         window.UIRenderer = UIRenderer;
+        window.testDatabaseConnection = testDatabaseConnection;
+        window.testImportFunctions = testImportFunctions;
     </script>
 </body>
 </html>
